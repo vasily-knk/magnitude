@@ -116,6 +116,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="hello_world.cpp" />
+    <ClCompile Include="HLDemoParser\src\DemoFile.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="HLDemoParser\src\DemoFile.hpp" />
+    <ClInclude Include="HLDemoParser\src\DemoFrame.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

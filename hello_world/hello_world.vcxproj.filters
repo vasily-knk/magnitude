@@ -18,5 +18,16 @@
     <ClCompile Include="hello_world.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="HLDemoParser\src\DemoFile.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="HLDemoParser\src\DemoFile.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HLDemoParser\src\DemoFrame.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -1,3 +1,6 @@
 [submodule "vs_props"]
 	path = vs_props
 	url = https://github.com/vasily-knk/vs_props.git
+[submodule "hello_world/HLDemoParser"]
+	path = hello_world/HLDemoParser
+	url = ../HLDemoParser
