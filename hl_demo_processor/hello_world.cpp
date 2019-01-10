@@ -46,24 +46,25 @@ void print_undef(hl_netmsg::msg_type_e id)
 }
 
 template<hl_netmsg::msg_type_e N>
-void inst()
+std::enable_if_t<N == hl_netmsg::SVC_NUM_VALUES, void> inst()
 {
-    if constexpr (N == hl_netmsg::SVC_NUM_VALUES)
-        return;
-    else
-    {
-        if (!hl_netmsg::msg_t<N>::ok)
-            print_undef(N);
 
-        inst<hl_netmsg::msg_type_e(N + 1)>();
-    }
+}
+
+template<hl_netmsg::msg_type_e N>
+std::enable_if_t<N < hl_netmsg::SVC_NUM_VALUES, void> inst()
+{
+    if (!hl_netmsg::msg_t<N>::ok)
+        print_undef(N);
+
+    inst<hl_netmsg::msg_type_e(N + 1)>();
 }
 
 int main()
 {
     inst<hl_netmsg::SVC_BAD>();
     
-    DemoFile df("../../../data/mydemo1.dem", true);
+    DemoFile df("data/mydemo1.dem", true);
 
     for (auto const &dir : df.directoryEntries)
     {
