@@ -31,7 +31,7 @@ struct proc
 
 
 
-    
+
     template<typename T>
     void operator()(T & value, char const*, if_simple_t<T> * = nullptr)
     {
@@ -87,7 +87,9 @@ std::enable_if_t<!is_simple_msg_v<msg_t<N>>, void> inst_inner()
 template<msg_type_e N>
 std::enable_if_t<is_simple_msg_v<msg_t<N>>, void> inst_inner()
 {
-    std::array<char, 1000> bytes;
+    std::string bytes = "Hello";
+    bytes.resize(32, '\0');
+
     binary::input_stream is(bytes.data(), bytes.size());
     proc p(is);
     msg_t<N> msg;
