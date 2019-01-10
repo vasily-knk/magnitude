@@ -1,4 +1,5 @@
 #pragma once
+#include "reflection/reflection.h"
 
 namespace hl_netmsg
 {
@@ -75,96 +76,171 @@ using std::string;
 template<msg_type_e>
 struct msg_t
 {
-    constexpr static bool ok = false;
 };
 
-struct ok_msg_t
+struct simple_msg_t
 {
-    constexpr static bool ok = true;
 };
 
+template<typename T>
+struct is_simple_msg
+    : std::integral_constant<bool, std::is_base_of_v<simple_msg_t, T>>
+{};
 
-struct coord {};
+template<typename T>
+constexpr bool is_simple_msg_v = is_simple_msg<T>::value;
 
-#define DEF_MSG(id) template<> struct msg_t<id> : ok_msg_t
+
+struct coord
+{
+    REFL_INNER(coord)
+    REFL_END()
+};
+
+#define DEF_MSG(id) template<> struct msg_t<id> : simple_msg_t
 
 DEF_MSG(SVC_BAD)
 {
+    REFL_INNER(msg_t)
+    REFL_END()
+
 };
     
 DEF_MSG(SVC_ADDANGLE)
 {
+    REFL_INNER(msg_t)
+        REFL_ENTRY(AngleToAdd)
+    REFL_END()
+
     short 	AngleToAdd;
 };
 
 DEF_MSG(SVC_CDTRACK)
 {
-    byte 	Track   ;
+    REFL_INNER(msg_t)
+        REFL_ENTRY(Track    )
+        REFL_ENTRY(LoopTrack)
+    REFL_END()
+
+    byte 	Track    ;
     byte 	LoopTrack;
 };
 
 DEF_MSG(SVC_CENTERPRINT)
 {
+    REFL_INNER(msg_t)
+        REFL_ENTRY(Message)
+    REFL_END()
+
     string 	Message;
 };
 
 DEF_MSG(SVC_CHOKE)
 {
+    REFL_INNER(msg_t)
+    REFL_END()
+
 };
 
 DEF_MSG(SVC_CROSSHAIRANGLE)
 {
+    REFL_INNER(msg_t)
+        REFL_ENTRY(PitchAngleX5)
+        REFL_ENTRY(YawAngleX5  )
+    REFL_END()
+
     char 	PitchAngleX5;
-    char 	YawAngleX5; 
+    char 	YawAngleX5  ; 
 };
 
 DEF_MSG(SVC_CUSTOMIZATION)
 {
+    REFL_INNER(msg_t)
+        REFL_ENTRY(PlayerIndex )
+        REFL_ENTRY(Type        )
+        REFL_ENTRY(Name        )
+        REFL_ENTRY(Index       )
+        REFL_ENTRY(DownloadSize)
+        REFL_ENTRY(Flags       )
+        REFL_ENTRY(MD5Hash     )
+    REFL_END()
+
     byte 	PlayerIndex ;
     byte 	Type        ;
     string 	Name        ;
     short 	Index       ;
     long 	DownloadSize;
     byte 	Flags       ;
-    byte 	MD5Hash[16] ;
+    std::array<byte, 16> 	MD5Hash;
 };
 
 DEF_MSG(SVC_CUTSCENE)
 {
+    REFL_INNER(msg_t)
+        REFL_ENTRY(Text)
+    REFL_END()
+
     string 	Text;
 };
 
 DEF_MSG(SVC_DAMAGE)
 {
+    REFL_INNER(msg_t)
+    REFL_END()
+
 };
 
 DEF_MSG(SVC_DECALNAME)
 {
+    REFL_INNER(msg_t)
+        REFL_ENTRY(PositionIndex)
+        REFL_ENTRY(DecalName    )
+    REFL_END()
+
     byte 	PositionIndex;
     string 	DecalName    ;
 };
 
 DEF_MSG(SVC_DISCONNECT)
 {
+    REFL_INNER(msg_t)
+        REFL_ENTRY(Reason)
+    REFL_END()
+
     string 	Reason;
 };
 
 DEF_MSG(SVC_FILETXFERFAILED)
 {
+    REFL_INNER(msg_t)
+        REFL_ENTRY(FileName)
+    REFL_END()
+
     string 	FileName;
 };
 
 DEF_MSG(SVC_FINALE)
 {
+    REFL_INNER(msg_t)
+        REFL_ENTRY(Text)
+    REFL_END()
+
     string 	Text;
 };
 
 DEF_MSG(SVC_FOUNDSECRET)
 {
+    REFL_INNER(msg_t)
+    REFL_END()
+
 };
 
 DEF_MSG(SVC_HLTV)
 {
+    REFL_INNER(msg_t)
+        REFL_ENTRY(Mode)
+    REFL_END()
+
     enum mode_t : uint8_t
     {
         HLTV_ACTIVE,
@@ -177,20 +253,60 @@ DEF_MSG(SVC_HLTV)
 
 DEF_MSG(SVC_INTERMISSION)
 {
+    REFL_INNER(msg_t)
+    REFL_END()
+
 };
 
 DEF_MSG(SVC_KILLEDMONSTER)
 {
+    REFL_INNER(msg_t)
+    REFL_END()
+
 };
 
 DEF_MSG(SVC_LIGHTSTYLE)
 {
+    REFL_INNER(msg_t)
+        REFL_ENTRY(index    )
+        REFL_ENTRY(lightinfo)
+    REFL_END()
+
     byte 	index    ;
     string 	lightinfo; 
 };
 
 DEF_MSG(SVC_NEWMOVEVARS)
 {
+    REFL_INNER(msg_t)
+        REFL_ENTRY(Gravity          )
+        REFL_ENTRY(StopSpeed        )
+        REFL_ENTRY(MaxSpeed         )
+        REFL_ENTRY(SpectatorMaxSpeed)
+        REFL_ENTRY(Accelerate       )
+        REFL_ENTRY(AirAccelerate    )
+        REFL_ENTRY(WaterAccelerate  )
+        REFL_ENTRY(Friction         )
+        REFL_ENTRY(EdgeFriction     )
+        REFL_ENTRY(WaterFriction    )
+        REFL_ENTRY(EntGravity       )
+        REFL_ENTRY(Bounce           )
+        REFL_ENTRY(StepSize         )
+        REFL_ENTRY(MaxVelocity      )
+        REFL_ENTRY(ZMax             )
+        REFL_ENTRY(WaveHeigth       )
+        REFL_ENTRY(Footsteps        )
+        REFL_ENTRY(RollAngle        )
+        REFL_ENTRY(RollSpeed        )
+        REFL_ENTRY(SkyColorRed      )
+        REFL_ENTRY(SkyColorGreen    )
+        REFL_ENTRY(SkyColorBlue     )
+        REFL_ENTRY(SkyVecX          )
+        REFL_ENTRY(SkyVecY          )
+        REFL_ENTRY(SkyVecZ          )
+        REFL_ENTRY(SkyName          )
+    REFL_END()               
+
     float 	Gravity          ;
     float 	StopSpeed        ;
     float 	MaxSpeed         ;
@@ -228,38 +344,69 @@ DEF_MSG(SVC_NEWMOVEVARS)
 
 DEF_MSG(SVC_NOP)
 {
+    REFL_INNER(msg_t)
+    REFL_END()
+
 };
 
 DEF_MSG(SVC_PARTICLE)
 {
+    REFL_INNER(msg_t)
+        REFL_ENTRY(OriginX        )
+        REFL_ENTRY(OriginY        )
+        REFL_ENTRY(OriginZ        )
+        REFL_ENTRY(DirectionXX16  )
+        REFL_ENTRY(DirectionYX16  )
+        REFL_ENTRY(DirectionZX16  )
+        REFL_ENTRY(Count          )
+        REFL_ENTRY(Color          )
+    REFL_END()
+
     coord 	OriginX        ;
     coord 	OriginY        ;
     coord 	OriginZ        ;
-    char 	DirectionXX16;
-    char 	DirectionYX16;
-    char 	DirectionZX16;
+    char 	DirectionXX16  ;
+    char 	DirectionYX16  ;
+    char 	DirectionZX16  ;
     byte 	Count          ;
     byte 	Color          ;
 };
 
 DEF_MSG(SVC_PRINT)
 {
+    REFL_INNER(msg_t)
+        REFL_ENTRY(Message)
+    REFL_END()
+
     string 	Message;
 };
 
 DEF_MSG(SVC_RESOURCELOCATION)
 {
+    REFL_INNER(msg_t)
+        REFL_ENTRY(sv_downloadurl)
+    REFL_END()
+
     string 	sv_downloadurl;
 };
 
 DEF_MSG(SVC_RESOURCEREQUEST)
 {
+    REFL_INNER(msg_t)
+        REFL_ENTRY(SpawnCount)
+        REFL_ENTRY(Zero      )
+    REFL_END()
+
     long 	SpawnCount;
     long 	Zero      ;
 };
 
 DEF_MSG(SVC_ROOMTYPE)
 {
+    REFL_INNER(msg_t)
+        REFL_ENTRY(Value)
+    REFL_END()
+
     //0 = Normal (off)
     //1 = Generic
     //2 = Metal Small
@@ -295,27 +442,56 @@ DEF_MSG(SVC_ROOMTYPE)
 
 DEF_MSG(SVC_SENDCVARVALUE)
 {
+    REFL_INNER(msg_t)
+        REFL_ENTRY(Name)
+    REFL_END()
+
     string 	Name;
 };
 
 DEF_MSG(SVC_SENDCVARVALUE2)
 {
+    REFL_INNER(msg_t)
+        REFL_ENTRY(RequestID)
+        REFL_ENTRY(Name     )
+    REFL_END()
+
     long 	RequestID;
     string 	Name     ;
 };
 
 DEF_MSG(SVC_SENDEXTRAINFO)
 {
+    REFL_INNER(msg_t)
+        REFL_ENTRY(FallbackDir)
+        REFL_ENTRY(CanCheat   )
+    REFL_END()
+
     string 	FallbackDir;
     byte 	CanCheat   ;
 };
 
 DEF_MSG(SVC_SERVERINFO)
 {
+    REFL_INNER(msg_t)
+        REFL_ENTRY(Protocol     )
+        REFL_ENTRY(SpawnCount   )
+        REFL_ENTRY(MapCRC       )
+        REFL_ENTRY(ClientDLLHash)
+        REFL_ENTRY(MaxPlayers   )
+        REFL_ENTRY(PlayerIndex  )
+        REFL_ENTRY(IsDeathmatch )
+        REFL_ENTRY(GameDir      )
+        REFL_ENTRY(Hostname     )
+        REFL_ENTRY(MapFileName  )
+        REFL_ENTRY(Mapcycle     )
+        REFL_ENTRY(Zero         )
+    REFL_END()
+
     long 	Protocol         ;
     long 	SpawnCount       ;
     long 	MapCRC           ;
-    byte 	ClientDLLHash[16];
+    std::array<byte, 16> 	ClientDLLHash;
     byte 	MaxPlayers       ;
     byte 	PlayerIndex      ;
     byte 	IsDeathmatch     ;
@@ -328,6 +504,12 @@ DEF_MSG(SVC_SERVERINFO)
 
 DEF_MSG(SVC_SETANGLE)
 {
+    REFL_INNER(msg_t)
+        REFL_ENTRY(AnglePitch)
+        REFL_ENTRY(AngleYaw  )
+        REFL_ENTRY(AngleRoll )
+    REFL_END()
+
     short 	AnglePitch;
     short 	AngleYaw  ;
     short 	AngleRoll ;
@@ -335,21 +517,40 @@ DEF_MSG(SVC_SETANGLE)
 
 DEF_MSG(SVC_SETPAUSE)
 {
+    REFL_INNER(msg_t)
+        REFL_ENTRY(IsPaused)
+    REFL_END()
+
     byte 	IsPaused;
 };
 
 DEF_MSG(SVC_SETVIEW)
 {
+    REFL_INNER(msg_t)
+        REFL_ENTRY(EntityIndex)
+    REFL_END()
+
     short 	EntityIndex;
 };
 
 DEF_MSG(SVC_SIGNONNUM)
 {
+    REFL_INNER(msg_t)
+        REFL_ENTRY(One)
+    REFL_END()
+
     byte One;
 };
 
 DEF_MSG(SVC_SOUNDFADE)
 {
+    REFL_INNER(msg_t)
+        REFL_ENTRY(InitialPercent)
+        REFL_ENTRY(HoldTime      )
+        REFL_ENTRY(FadeOutTime   )
+        REFL_ENTRY(FadeInTime    )
+    REFL_END()
+
     byte 	InitialPercent;
     byte 	HoldTime      ;
     byte 	FadeOutTime   ;
@@ -358,6 +559,17 @@ DEF_MSG(SVC_SOUNDFADE)
 
 DEF_MSG(SVC_SPAWNSTATICSOUND)
 {
+    REFL_INNER(msg_t)
+        REFL_ENTRY(OriginX       )
+        REFL_ENTRY(OriginY       )
+        REFL_ENTRY(OriginZ       )
+        REFL_ENTRY(SoundIndex    )
+        REFL_ENTRY(VolumeX255    )
+        REFL_ENTRY(AttenuationX64)
+        REFL_ENTRY(EntityIndex   )
+        REFL_ENTRY(Flags         )
+    REFL_END()
+
     coord 	OriginX       ;
     coord 	OriginY       ;
     coord 	OriginZ       ;
@@ -370,45 +582,82 @@ DEF_MSG(SVC_SPAWNSTATICSOUND)
 
 DEF_MSG(SVC_STOPSOUND)
 {
+    REFL_INNER(msg_t)
+        REFL_ENTRY(EntityIndex)
+    REFL_END()
+
     short 	EntityIndex;
 };
 
 DEF_MSG(SVC_STUFFTEXT)
 {
+    REFL_INNER(msg_t)
+        REFL_ENTRY(Command)
+    REFL_END()
+
     string 	Command;
 };
 
 DEF_MSG(SVC_TIME)
 {
+    REFL_INNER(msg_t)
+        REFL_ENTRY(Time)
+    REFL_END()
+
     float 	Time;
 };
 
 DEF_MSG(SVC_TIMESCALE)
 {
+    REFL_INNER(msg_t)
+        REFL_ENTRY(TimeScale)
+    REFL_END()
+
     float 	TimeScale;
 };
 
 DEF_MSG(SVC_UPDATEUSERINFO)
 {
+    REFL_INNER(msg_t)
+        REFL_ENTRY(ClientIndex    )
+        REFL_ENTRY(ClientUserID   )
+        REFL_ENTRY(ClientUserInfo )
+        REFL_ENTRY(ClientCDKeyHash)
+    REFL_END()
+
     byte 	ClientIndex        ;
     long 	ClientUserID       ;
     string 	ClientUserInfo     ;
-    byte 	ClientCDKeyHash[16];
+    std::array<byte, 16> 	ClientCDKeyHash;
 };
 
 DEF_MSG(SVC_VERSION)
 {
+    REFL_INNER(msg_t)
+        REFL_ENTRY(ProtocolVersion)
+    REFL_END()
+
     long 	ProtocolVersion;
 };
 
 DEF_MSG(SVC_VOICEINIT)
 {
+    REFL_INNER(msg_t)
+        REFL_ENTRY(CodecName)
+        REFL_ENTRY(Quality  )
+    REFL_END()
+
     string 	CodecName;
     byte 	Quality  ;
 };
 
 DEF_MSG(SVC_WEAPONANIM)
 {
+    REFL_INNER(msg_t)
+        REFL_ENTRY(SequenceNumber      )
+        REFL_ENTRY(WeaponmodelBodygroup)
+    REFL_END()
+
     byte 	SequenceNumber      ;
     byte 	WeaponmodelBodygroup;
 };

@@ -1,67 +1,113 @@
-#include <iostream>
-#include <set>
-#include <map>
-#include <algorithm>
 #include "HLDemoParser/src/DemoFile.hpp"
 
-#include <cstdint>
 #include "hl_netmsg.h"
+#include "serialization/io_streams.h"
 
-template<typename T>
-struct stats_counter_t
+struct proc
 {
-    typedef std::pair<T, int> sorted_value_t;
-    typedef std::vector<sorted_value_t> sorted_t;
+    explicit proc(binary::input_stream &is)
+        : is(is)
+    {}
+    
+    
+    template<typename T>
+    struct is_simple;
+    
+    template<typename T>
+    constexpr static bool is_simple_v = is_simple<T>::value;
 
-    void add(T const &value)
+    template<typename T>
+    struct is_simple : std::integral_constant<bool, std::is_arithmetic_v<T> || std::is_enum_v<T>> {};
+
+    template<typename T, size_t N>
+    struct is_simple<std::array<T, N>> : std::integral_constant<bool, is_simple_v<T>> {};
+
+
+    template<typename T>
+    using if_simple_t = std::enable_if_t<is_simple_v<T>>;
+    template<typename T>
+    using if_not_simple_t = std::enable_if_t<!is_simple_v<T>>;
+
+
+
+
+    
+    template<typename T>
+    void operator()(T & value, char const*, if_simple_t<T> * = nullptr)
     {
-        auto it = map_.find(value);
-        if (it == map_.end())
-            it = map_.emplace(value, 0).first;
-
-        ++it->second;
+        is.read(value);
     }
 
-    sorted_t sorted() const
+    void operator()(string &value, char const *)
     {
-        sorted_t result;
-
-        std::copy(map_.begin(), map_.end(), std::back_inserter(result));
-
-        std::sort(result.begin(), result.end(), [](sorted_value_t const &a, sorted_value_t const &b)
+        std::stringstream ss;
+        
+        while (true)
         {
-            return a.second > b.second;
-        });
+            char c;
+            is.read(c);
 
-        return result;
+            if (c == '\0')
+                break;
+
+            ss << c;
+        }
+        
+        value = ss.str();
+    }
+
+    template<typename T>
+    void operator()(T & value, char const *, if_not_simple_t<T> * = nullptr)
+    {
+        reflect(*this, value);
     }
 
 private:
-    std::map<T, int> map_;
+    binary::input_stream &is;
 };
 
-void print_undef(hl_netmsg::msg_type_e id)
-{
-               std::cout << "Undef: " << id << std::endl; 
-}
-
-template<hl_netmsg::msg_type_e N>
-std::enable_if_t<N == hl_netmsg::SVC_NUM_VALUES, void> inst()
+namespace 
 {
 
-}
+using namespace hl_netmsg;
 
-template<hl_netmsg::msg_type_e N>
-std::enable_if_t<N < hl_netmsg::SVC_NUM_VALUES, void> inst()
+template<msg_type_e N>
+std::enable_if_t<N == SVC_NUM_VALUES, void> inst()
 {
-    if (!hl_netmsg::msg_t<N>::ok)
-        print_undef(N);
 
-    inst<hl_netmsg::msg_type_e(N + 1)>();
 }
+
+template<msg_type_e N>
+std::enable_if_t<!is_simple_msg_v<msg_t<N>>, void> inst_inner()
+{
+    std::cout << "Undef: " << N << std::endl; 
+   
+}
+
+template<msg_type_e N>
+std::enable_if_t<is_simple_msg_v<msg_t<N>>, void> inst_inner()
+{
+    std::array<char, 1000> bytes;
+    binary::input_stream is(bytes.data(), bytes.size());
+    proc p(is);
+    msg_t<N> msg;
+    reflect(p, msg);   
+}
+
+
+template<msg_type_e N>
+std::enable_if_t<N < SVC_NUM_VALUES, void> inst()
+{
+    inst_inner<N>();
+
+    inst<msg_type_e(N + 1)>();
+}
+
+} // namespace
 
 int main()
 {
+    
     inst<hl_netmsg::SVC_BAD>();
     
     DemoFile df("data/mydemo1.dem", true);
