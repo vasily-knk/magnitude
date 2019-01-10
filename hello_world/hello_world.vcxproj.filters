@@ -29,5 +29,8 @@
     <ClInclude Include="HLDemoParser\src\DemoFrame.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="hl_netmsg.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
