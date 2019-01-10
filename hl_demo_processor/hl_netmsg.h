@@ -91,11 +91,8 @@ template<typename T>
 constexpr bool is_simple_msg_v = is_simple_msg<T>::value;
 
 
-struct coord
-{
-    REFL_INNER(coord)
-    REFL_END()
-};
+typedef short coord;
+
 
 #define DEF_MSG(id) template<> struct msg_t<id> : simple_msg_t
 
@@ -335,12 +332,20 @@ DEF_MSG(SVC_NEWMOVEVARS)
     string 	SkyName          ;
 };
 
-//DEF_MSG(SVC_NEWUSERMSG)
-//{
-//    byte 	Index;
-//    byte 	Size;
-//    uint16_t 	Name; ???
-//};
+DEF_MSG(SVC_NEWUSERMSG)
+{
+    REFL_INNER(msg_t)
+        REFL_ENTRY(Index)
+        REFL_ENTRY(Size)
+        REFL_ENTRY(Name)
+    REFL_END()
+    
+    byte 	Index;
+    byte 	Size;
+    std::array<char, 16> 	Name; 
+
+
+};
 
 DEF_MSG(SVC_NOP)
 {
