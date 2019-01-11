@@ -2,115 +2,71 @@
 
 #include "hl_netmsg.h"
 #include "serialization/io_streams.h"
+#include "msg_reader.h"
 
-struct proc
-{
-    explicit proc(binary::input_stream &is)
-        : is(is)
-    {}
-    
-    
-    template<typename T>
-    struct is_simple;
-    
-    template<typename T>
-    constexpr static bool is_simple_v = is_simple<T>::value;
-
-    template<typename T>
-    struct is_simple : std::integral_constant<bool, std::is_arithmetic_v<T> || std::is_enum_v<T>> {};
-
-    template<typename T, size_t N>
-    struct is_simple<std::array<T, N>> : std::integral_constant<bool, is_simple_v<T>> {};
+using namespace hl_netmsg;
 
 
-    template<typename T>
-    using if_simple_t = std::enable_if_t<is_simple_v<T>>;
-    template<typename T>
-    using if_not_simple_t = std::enable_if_t<!is_simple_v<T>>;
-
-
-
-
-
-    template<typename T>
-    void operator()(T & value, char const*, if_simple_t<T> * = nullptr)
-    {
-        is.read(value);
-    }
-
-    void operator()(string &value, char const *)
-    {
-        std::stringstream ss;
-        
-        while (true)
-        {
-            char c;
-            is.read(c);
-
-            if (c == '\0')
-                break;
-
-            ss << c;
-        }
-        
-        value = ss.str();
-    }
-
-    template<typename T>
-    void operator()(T & value, char const *, if_not_simple_t<T> * = nullptr)
-    {
-        reflect(*this, value);
-    }
-
-private:
-    binary::input_stream &is;
-};
 
 namespace 
 {
 
-using namespace hl_netmsg;
-
-template<msg_type_e N>
-std::enable_if_t<N == SVC_NUM_VALUES, void> inst()
+struct msg_disp_t         
 {
+    explicit msg_disp_t(binary::input_stream& is)
+        : is_(is)
+    {
+    }
 
-}
+    void go()
+    {
+        while (!is_.eof())
+        {
+            msg_type_e id;
+            is_.read(reinterpret_cast<uint8_t&>(id));
 
-template<msg_type_e N>
-std::enable_if_t<!is_simple_msg_v<msg_t<N>>, void> inst_inner()
-{
-    std::cout << "Undef: " << N << std::endl; 
-   
-}
+            process_msg(id);
+        }
+    }
 
-template<msg_type_e N>
-std::enable_if_t<is_simple_msg_v<msg_t<N>>, void> inst_inner()
-{
-    std::string bytes = "Hello";
-    bytes.resize(128, '\0');
+private:
+    void process_msg(msg_type_e id)
+    {
+        if (id >= SVC_NUM_VALUES)
+        {
+            LogWarn("Unsupported msg: " << id);
+            return;
+        }
 
-    binary::input_stream is(bytes.data(), bytes.size());
-    proc p(is);
-    msg_t<N> msg;
-    reflect(p, msg);   
-}
+        process_msg_cand<SVC_BAD>(id);
+    }
 
+    template<msg_type_e Id>
+    void process_msg_cand(msg_type_e id, std::enable_if_t<Id < SVC_NUM_VALUES> * = nullptr)
+    {
+        if (Id < id)
+            return process_msg_cand<msg_type_e(Id + 1)>(id);
 
-template<msg_type_e N>
-std::enable_if_t<N < SVC_NUM_VALUES, void> inst()
-{
-    inst_inner<N>();
+        msg_t<Id> msg;
+        msg_reader p(is_);
+        p.read_msg(msg);           
+    }
 
-    inst<msg_type_e(N + 1)>();
-}
-
+    template<msg_type_e Id>
+    void process_msg_cand(msg_type_e, std::enable_if_t<Id == SVC_NUM_VALUES> * = nullptr)
+    {
+        Verify(false);
+    }
+    
+private:
+    binary::input_stream &is_;
+};
 } // namespace
+
+
 
 int main()
 {
-    
-    inst<hl_netmsg::SVC_BAD>();
     
     DemoFile df("data/mydemo1.dem", true);
 
@@ -123,6 +79,12 @@ int main()
                 continue;
 
             auto const *msg_frame = static_cast<NetMsgFrame const *>(frame.get());
+
+            auto const & data = msg_frame->msg;
+            binary::input_stream is(data.data(), data.size());
+            msg_disp_t disp(is);
+            disp.go();
+
         }
     }
 

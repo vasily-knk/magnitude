@@ -6,7 +6,7 @@ include($$DEV_ROOT/src/predefines.pri)
 CONFIG -= qt
 CONFIG += console
 
-# LIBS += -llogger -lalloc -lani -lfms -lcrash_handler -lzlib -lprocess_state -ljson_io -lteamcity_support
+LIBS += -llogger -lcrash_handler
 
 PRECOMPILED_HEADER = stdafx.h
 

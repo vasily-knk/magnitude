@@ -4,7 +4,7 @@
 namespace hl_netmsg
 {
     
-enum msg_type_e
+enum msg_type_e : uint8_t
 {
     SVC_BAD                  = 0 ,
     SVC_NOP                  = 1 ,
@@ -73,10 +73,6 @@ typedef uint8_t byte;
 
 using std::string;
 
-template<msg_type_e>
-struct msg_t
-{
-};
 
 struct simple_msg_t
 {
@@ -91,10 +87,30 @@ template<typename T>
 constexpr bool is_simple_msg_v = is_simple_msg<T>::value;
 
 
+struct complex_msg_t
+{
+};
+
+template<typename T>
+struct is_complex_msg
+    : std::integral_constant<bool, std::is_base_of_v<complex_msg_t, T>>
+{};
+
+template<typename T>
+constexpr bool is_complex_msg_v = is_complex_msg<T>::value;
+
+
+template<msg_type_e>
+struct msg_t
+    : complex_msg_t
+{
+};
+    
 typedef short coord;
 
 
 #define DEF_MSG(id) template<> struct msg_t<id> : simple_msg_t
+#define DEF_COMPLEX_MSG(id) template<> struct msg_t<id> : complex_msg_t
 
 DEF_MSG(SVC_BAD)
 {

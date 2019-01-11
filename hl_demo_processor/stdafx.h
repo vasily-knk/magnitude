@@ -2,7 +2,6 @@
 #include "common/boost.h"
 
 #include "logger/assert.hpp"
-#define Verify Assert
 
 //#include <boost/range/algorithm.hpp>
 //#include <boost/range/adaptors.hpp>
