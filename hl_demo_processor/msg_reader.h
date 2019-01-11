@@ -49,20 +49,28 @@ public:
         VerifyMsg(false, "Unsupported msg");
     }
 
+    void read_msg(msg_t<SVC_DELTADESCRIPTION> &msg);
+
     friend struct single_entry_processor<msg_reader>;
 
+private:
+    template<typename T>
+    void operator()(T & value, char const*)
+    {
+        read_field(value);
+    }
     
 private:
     template<typename T>
-    void operator()(T & value, char const*, if_simple_t<T> * = nullptr)
+    void read_field(T & value, if_simple_t<T> * = nullptr)
     {
         is.read(value);
     }
 
-    void operator()(string &value, char const *);
+    void read_field(string &value);
 
     template<typename T>
-    void operator()(T & value, char const *, if_not_simple_t<T> * = nullptr)
+    void read_field(T & value, if_not_simple_t<T> * = nullptr)
     {
         reflect(*this, value);
     }

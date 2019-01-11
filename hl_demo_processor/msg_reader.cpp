@@ -2,8 +2,15 @@
 
 namespace hl_netmsg
 {
-    
-void msg_reader::operator()(string &value, char const *)
+void msg_reader::read_msg(msg_t<SVC_DELTADESCRIPTION>& msg)
+{
+    read_field(msg.Name);
+    read_field(msg.NumFields);
+
+    int aaa = 5;
+}
+
+void msg_reader::read_field(string &value)
 {
     std::stringstream ss;
         

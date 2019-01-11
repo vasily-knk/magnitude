@@ -683,6 +683,12 @@ DEF_MSG(SVC_WEAPONANIM)
     byte 	WeaponmodelBodygroup;
 };
 
+DEF_COMPLEX_MSG(SVC_DELTADESCRIPTION)
+{
+    string Name;
+    short NumFields;
+};
+
 #undef DEF_MSG
 
 } // namespace hl_netmsg

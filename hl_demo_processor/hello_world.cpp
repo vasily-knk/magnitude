@@ -50,6 +50,8 @@ private:
         msg_t<Id> msg;
         msg_reader p(is_);
         p.read_msg(msg);           
+
+        int aaa = 5;
     }
 
     template<msg_type_e Id>
