@@ -42,6 +42,11 @@ struct bit_reader
         return dst = read_uint<T>(n_bits);
     }
 
+    bool read_bool()
+    {
+        return read_uint(1) != 0;
+    }
+
 
     size_t remaining() const
     {

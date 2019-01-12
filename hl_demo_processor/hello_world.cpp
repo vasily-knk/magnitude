@@ -13,20 +13,19 @@ namespace
 
 struct msg_disp_t         
 {
-    explicit msg_disp_t(binary::input_stream& is)
-        : is_(is)
+    void go(binary::input_stream& is)
     {
-    }
-
-    void go()
-    {
-        while (!is_.eof())
+        is_ = &is;
+        
+        while (!is.eof())
         {
             msg_type_e id;
-            is_.read(reinterpret_cast<uint8_t&>(id));
+            is.read(reinterpret_cast<uint8_t&>(id));
 
             process_msg(id);
         }
+
+        is_ = nullptr;
     }
 
 private:
@@ -48,7 +47,7 @@ private:
             return process_msg_cand<msg_type_e(Id + 1)>(id);
 
         msg_t<Id> msg;
-        msg_reader p(is_, last_entry_);
+        msg_reader p(*is_, reader_context_);
         p.read_msg(msg);           
 
         process_msg_impl(msg);
@@ -71,13 +70,20 @@ private:
     void process_msg_impl(msg_t<SVC_DELTADESCRIPTION> const &msg)
     {
         if (!msg.Entries.empty())
-            last_entry_ = msg.Entries.back();
+            reader_context_.last_entry = msg.Entries.back();
+
+        reader_context_.delta_desc_map[msg.Name] = msg.Entries;
     }
-    
+
+    void process_msg_impl(msg_t<SVC_SERVERINFO> const &msg)
+    {
+        reader_context_.max_clients = msg.MaxPlayers;
+    }    
 
 private:
-    binary::input_stream &is_;
-    optional<delta_entry_t> last_entry_;
+    binary::input_stream *is_ = nullptr;
+
+    msg_reader::context_t reader_context_;
 };
 
 } // namespace
@@ -88,6 +94,8 @@ int main()
 {
     
     DemoFile df("data/mydemo1.dem", true);
+
+        msg_disp_t disp;
 
     for (auto const &dir : df.directoryEntries)
     {
@@ -101,8 +109,7 @@ int main()
 
             auto const & data = msg_frame->msg;
             binary::input_stream is(data.data(), data.size());
-            msg_disp_t disp(is);
-            disp.go();
+            disp.go(is);
 
         }
     }

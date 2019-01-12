@@ -7,9 +7,16 @@ namespace hl_netmsg
 {
     struct msg_reader
     {
-        explicit msg_reader(binary::input_stream& is, optional<delta_entry_t> const& last_entry)
+        struct context_t
+        {
+            optional<delta_entry_t> last_entry;
+            delta_desc_map_t delta_desc_map;
+            optional<uint32_t> max_clients;
+        };
+
+        explicit msg_reader(binary::input_stream& is, context_t const& context)
             : is(is)
-              , last_entry_(last_entry)
+              , context_(context)
         {
         }
 
@@ -43,20 +50,27 @@ namespace hl_netmsg
         using if_not_simple_msg_t = std::enable_if_t<!hl_netmsg::is_simple_msg_v<T>>;
 
     public:
-        template <typename T>
-        void read_msg(T& value, if_simple_msg_t<T>* = nullptr)
+        template <msg_type_e Id>
+        void read_msg(msg_t<Id>& value, if_simple_msg_t<msg_t<Id>>* = nullptr)
         {
             reflect(*this, value);
         }
 
-        template <typename T>
-        void read_msg(T&, if_not_simple_msg_t<T>* = nullptr)
+        template <msg_type_e Id>
+        void read_msg(msg_t<Id>&, if_not_simple_msg_t<msg_t<Id>>* = nullptr)
         {
-            VerifyMsg(false, "Unsupported msg");
+            auto const id = Id;
+            VerifyMsg(false, "Unsupported msg: " << id);
         }
 
         void read_msg(msg_t<SVC_DELTADESCRIPTION>& msg);
         void read_msg(msg_t<SVC_RESOURCELIST>& msg);
+        void read_msg(msg_t<SVC_SPAWNBASELINE>& msg);
+        void read_msg(msg_t<SVC_CLIENTDATA>& msg);
+        void read_msg(msg_t<SVC_TEMPENTITY>& msg);
+        void read_msg(msg_t<SVC_DIRECTOR>& msg);
+        void read_msg(msg_t<SVC_SOUND>& msg);
+        void read_msg(msg_t<SVC_EVENT_RELIABLE>& msg);
 
 
         friend struct single_entry_processor<msg_reader>;
@@ -86,6 +100,6 @@ namespace hl_netmsg
 
     private:
         binary::input_stream& is;
-        optional<delta_entry_t> last_entry_;
+        context_t const& context_;
     };
 } // namespace hl_netmsg

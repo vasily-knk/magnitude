@@ -2,6 +2,7 @@
 #include "common/boost.h"
 
 #include "logger/assert.hpp"
+#include "common/points.h"
 
 //#include <boost/range/algorithm.hpp>
 //#include <boost/range/adaptors.hpp>
