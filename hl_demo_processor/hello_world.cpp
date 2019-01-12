@@ -22,8 +22,11 @@ struct msg_disp_t
             msg_type_e id;
             is.read(reinterpret_cast<uint8_t&>(id));
 
+            std::cout << id << std::endl;
+
             process_msg(id);
         }
+            std::cout << "----" << std::endl;
 
         is_ = nullptr;
     }
@@ -99,6 +102,8 @@ int main()
 
     for (auto const &dir : df.directoryEntries)
     {
+        int aaa = 5;
+        
         for (auto const &frame : dir.frames)
         {
             auto const frame_type_id = uint8_t(frame->type);

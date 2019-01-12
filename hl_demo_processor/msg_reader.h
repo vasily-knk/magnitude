@@ -3,6 +3,8 @@
 #include "hl_netmsg.h"
 #include "serialization/io_streams.h"
 
+struct bit_reader;
+
 namespace hl_netmsg
 {
     struct msg_reader
@@ -63,6 +65,7 @@ namespace hl_netmsg
             VerifyMsg(false, "Unsupported msg: " << id);
         }
 
+        void read_msg(msg_t<SVC_BAD>& msg);
         void read_msg(msg_t<SVC_DELTADESCRIPTION>& msg);
         void read_msg(msg_t<SVC_RESOURCELIST>& msg);
         void read_msg(msg_t<SVC_SPAWNBASELINE>& msg);
@@ -71,7 +74,17 @@ namespace hl_netmsg
         void read_msg(msg_t<SVC_DIRECTOR>& msg);
         void read_msg(msg_t<SVC_SOUND>& msg);
         void read_msg(msg_t<SVC_EVENT_RELIABLE>& msg);
+        void read_msg(msg_t<SVC_EVENT>& msg);
+        void read_msg(msg_t<SVC_SPAWNSTATIC>& msg);
+        void read_msg(msg_t<SVC_PACKETENTITIES>& msg);
+        void read_msg(msg_t<SVC_DELTAPACKETENTITIES>& msg);
 
+    private:
+        bool is_footer(bit_reader const &br) const;
+
+        typedef uint32_t UInt32;
+        typedef uint16_t UInt16;
+        typedef bool Boolean;
 
         friend struct single_entry_processor<msg_reader>;
 

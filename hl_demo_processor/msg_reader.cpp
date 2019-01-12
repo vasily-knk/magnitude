@@ -99,8 +99,9 @@ namespace hl_netmsg
         auto const bitmask = br.read_bits(bitmask_size_bytes * 8);
 
         Verify(desc.size() >= bitmask.size());
+        auto const sz = std::min(desc.size(), bitmask.size());
             
-        for (size_t i = 0; i < bitmask.size(); ++i)
+        for (size_t i = 0; i < sz; ++i)
         {
             if (!bitmask[i])
                 continue;
@@ -117,6 +118,11 @@ namespace hl_netmsg
 
     } // namespace 
 
+
+    void msg_reader::read_msg(msg_t<SVC_BAD>& msg)
+    {
+        //Verify(false);
+    }
 
     void msg_reader::read_msg(msg_t<SVC_DELTADESCRIPTION>& msg)
     {
@@ -609,6 +615,184 @@ namespace hl_netmsg
         {
             br.read_uint(16); // delay / 100.0f
         }
+    }
+
+    void msg_reader::read_msg(msg_t<SVC_EVENT>& msg)
+    {
+        bit_reader br(is);
+        auto const nEvents = br.read_uint(5);
+
+        for (size_t i = 0; i < nEvents; i++)
+        {
+            br.read_uint(10); // event index
+
+            bool const packetIndexBit = br.read_bool();
+
+            if (packetIndexBit)
+            {
+                br.read_uint(11); // packet index
+
+                bool const deltaBit = br.read_bool();
+
+                if (deltaBit)
+                {
+                    skip_delta_compressed(br, context_.delta_desc_map.at("event_t"));
+                }
+            }
+
+            bool const fireTimeBit = br.read_bool();
+
+            if (fireTimeBit)
+            {
+                br.read_uint(16); // fire time
+            }
+        }   
+    }
+
+    void msg_reader::read_msg(msg_t<SVC_SPAWNSTATIC>& msg)
+    {
+        auto &base = static_cast<msg_spawnstatic_base_t&>(msg);
+        read_field(base);
+
+        if (base.RenderMode != 0)
+        {
+            msg.RenderParams = boost::in_place();
+            read_field(*msg.RenderParams);
+        }
+
+        int aaa = 5;
+    }
+
+    void msg_reader::read_msg(msg_t<SVC_PACKETENTITIES>& msg)
+    {
+        uint16_t num_ents;
+        is.read(num_ents);
+
+        UInt32 entityNumber = 0;
+
+        bit_reader br(is);
+
+        // begin entity parsing
+        while (true)
+        {
+            if (is_footer(br))
+                break;
+
+            Boolean entityNumberIncrement = br.read_bool();
+
+            if (!entityNumberIncrement) // entity number isn't last entity number + 1, need to read it in
+            {
+                // is the following entity number absolute, or relative from the last one?
+                Boolean absoluteEntityNumber = br.read_bool();
+
+                if (absoluteEntityNumber)
+                {
+                    entityNumber = br.read_uint(11);
+                }
+                else
+                {
+                    entityNumber += br.read_uint(6);
+                }
+            }
+            else
+            {
+                entityNumber++;
+            }
+
+            Boolean custom = br.read_bool();
+            Boolean useBaseline = br.read_bool();
+
+            if (useBaseline)
+            {
+                br.read_bits(6); // baseline index
+            }
+
+            char const *entityType = "entity_state_t";
+
+            Verify(context_.max_clients);
+            if (entityNumber > 0 && entityNumber <= *context_.max_clients)
+            {
+                entityType = "entity_state_player_t";
+            }
+            else if (custom)
+            {
+                entityType = "custom_entity_state_t";
+            }
+
+            skip_delta_compressed(br, context_.delta_desc_map.at(entityType));
+
+        }
+
+    }
+
+    void msg_reader::read_msg(msg_t<SVC_DELTAPACKETENTITIES>& msg)
+    {
+        uint16_t num_ents;
+        is.read(num_ents);
+        is.skip(1);
+
+        UInt32 entityNumber = 0;
+
+        bit_reader br(is);
+
+        while (true)
+        {
+            if (is_footer(br))
+                break;
+
+            Boolean removeEntity = br.read_bool();
+
+            // is the following entity number absolute, or relative from the last one?
+            Boolean absoluteEntityNumber = br.read_bool();
+
+            if (absoluteEntityNumber)
+            {
+                entityNumber = br.read_uint(11);
+            }
+            else
+            {
+                entityNumber += br.read_uint(6);
+            }
+
+            if (!removeEntity)
+            {
+                Boolean custom = br.read_bool();
+
+                char const *entityType = "entity_state_t";
+
+                Verify(context_.max_clients);
+                if (entityNumber > 0 && entityNumber <= *context_.max_clients)
+                {
+                    entityType = "entity_state_player_t";
+                }
+                else if (custom)
+                {
+                    entityType = "custom_entity_state_t";
+                }
+
+                skip_delta_compressed(br, context_.delta_desc_map.at(entityType));
+
+            }
+        }
+
+    }
+
+    bool msg_reader::is_footer(bit_reader const& br) const
+    {
+        auto const rem = br.remaining();
+        auto const rem_size = rem.size();
+            
+        Verify(rem_size < 8);
+        if (rem.to_ulong() == 0)
+        {
+            binary::input_stream fake_is(is.curr(), is.left());
+            bit_reader fake_br(fake_is);
+
+            auto const bits_left = 16 - rem_size;
+            if (fake_br.read_bits(bits_left).to_ulong() == 0)
+                return true;
+        }
+        return false;
     }
 
     void msg_reader::read_field(string& value)

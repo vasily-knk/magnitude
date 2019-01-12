@@ -48,9 +48,9 @@ struct bit_reader
     }
 
 
-    size_t remaining() const
+    bitset_t const &remaining() const
     {
-        return remaining_.size();
+        return remaining_;
     }
 
 private:

@@ -113,6 +113,7 @@ namespace hl_netmsg
 
 #define DEF_MSG(id) template<> struct msg_t<id> : simple_msg_t
 #define DEF_COMPLEX_MSG(id) template<> struct msg_t<id> : complex_msg_t
+#define DEF_COMPLEX_MSG_BASE(id, base) template<> struct msg_t<id> : complex_msg_t, base
 
     DEF_MSG(SVC_BAD)
     {
@@ -694,5 +695,42 @@ namespace hl_netmsg
 
         vector<resource_t> Resources;
     };
+
+    struct msg_spawnstatic_base_t
+    {
+        typedef short angle;
+
+        std::array<uint8_t, 18> unknown_data;
+        byte 	RenderMode ;        
+
+        REFL_INNER(msg_spawnstatic_base_t)
+            REFL_ENTRY(unknown_data)        
+            REFL_ENTRY(RenderMode)        
+        REFL_END()
+    };
+
+    DEF_COMPLEX_MSG_BASE(SVC_SPAWNSTATIC, msg_spawnstatic_base_t)
+    {
+        struct render_params_t
+        {
+            byte 	RenderAmt   ;
+            byte 	RenderColorR;
+            byte 	RenderColorG;
+            byte 	RenderColorB;
+            byte 	RenderFX    ;         
+
+            REFL_INNER(render_params_t)
+                REFL_ENTRY(RenderAmt   )
+                REFL_ENTRY(RenderColorR)
+                REFL_ENTRY(RenderColorG)
+                REFL_ENTRY(RenderColorB)
+                REFL_ENTRY(RenderFX    )         
+            REFL_END()
+        };
+
+        optional<render_params_t> RenderParams;
+    };
+
+
 #undef DEF_MSG
 } // namespace hl_netmsg
