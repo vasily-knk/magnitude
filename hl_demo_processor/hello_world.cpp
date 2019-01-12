@@ -48,8 +48,10 @@ private:
             return process_msg_cand<msg_type_e(Id + 1)>(id);
 
         msg_t<Id> msg;
-        msg_reader p(is_);
+        msg_reader p(is_, last_entry_);
         p.read_msg(msg);           
+
+        process_msg_impl(msg);
 
         int aaa = 5;
     }
@@ -59,10 +61,25 @@ private:
     {
         Verify(false);
     }
+
+    template<msg_type_e Id>
+    void process_msg_impl(msg_t<Id> const &)
+    {
+        
+    }
+
+    void process_msg_impl(msg_t<SVC_DELTADESCRIPTION> const &msg)
+    {
+        if (!msg.Entries.empty())
+            last_entry_ = msg.Entries.back();
+    }
     
+
 private:
     binary::input_stream &is_;
+    optional<delta_entry_t> last_entry_;
 };
+
 } // namespace
 
 

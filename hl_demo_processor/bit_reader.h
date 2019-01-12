@@ -29,6 +29,20 @@ struct bit_reader
         return result;
     }
 
+    template<typename T = unsigned long>
+    T read_uint(size_t n_bits)
+    {
+        static_assert(std::is_integral_v<T> && std::is_unsigned_v<T> && sizeof(T) <= sizeof(unsigned long), "Incorrect type");
+        return T(read_bits(n_bits).to_ulong());
+    }
+
+    template<typename T>
+    T &read_uint(size_t n_bits, T &dst)
+    {                         
+        return dst = read_uint<T>(n_bits);
+    }
+
+
     size_t remaining() const
     {
         return remaining_.size();
