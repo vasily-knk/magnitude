@@ -583,6 +583,7 @@ namespace hl_netmsg
             REFL_ENTRY(AttenuationX64)
             REFL_ENTRY(EntityIndex )
             REFL_ENTRY(Flags )
+            REFL_ENTRY(one_byte_is_missing )
         REFL_END()
 
         coord OriginX;
@@ -593,6 +594,7 @@ namespace hl_netmsg
         byte AttenuationX64;
         short EntityIndex;
         byte Flags;
+        byte one_byte_is_missing;
     };
 
     DEF_MSG(SVC_STOPSOUND)

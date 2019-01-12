@@ -4,6 +4,7 @@
 #include "serialization/io_streams.h"
 #include "msg_reader.h"
 #include "common/stl_helpers.h"
+#include "common/stats_counter.h"
 
 using namespace hl_netmsg;
 
@@ -14,14 +15,20 @@ namespace
 
 struct msg_disp_t         
 {
+    ~msg_disp_t()
+    {
+        auto const stats = msg_stats_.sorted();
+        int aaa = 5;
+    }
+    
     void go(binary::input_stream& is)
     {
         is_ = &is;
         
         while (!is.eof())
         {
-            msg_type_e id;
-            is.read(reinterpret_cast<uint8_t&>(id));
+            uint8_t id;
+            is.read(id);
 
             process_msg(id);
         }
@@ -30,8 +37,12 @@ struct msg_disp_t
     }
 
 private:
-    void process_msg(msg_type_e id)
+    void process_msg(uint8_t id)
     {
+        auto const id_e = msg_type_e(id);
+        
+        msg_stats_.add(id_e);
+        
         if (auto const *um = stl_helpers::map_item(user_msgs_, id))
         {
             size_t to_skip;
@@ -52,7 +63,7 @@ private:
         
         Verify(id < SVC_NUM_VALUES);
 
-        process_msg_cand<SVC_BAD>(id);
+        process_msg_cand<SVC_BAD>(id_e);
     }
 
     template<msg_type_e Id>
@@ -122,6 +133,7 @@ private:
 
     msg_reader::context_t reader_context_;
     std::map<uint8_t, user_msg_t> user_msgs_;
+    stats_counter_t<msg_type_e> msg_stats_;
 };
 
 } // namespace

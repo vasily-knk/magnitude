@@ -676,7 +676,10 @@ namespace hl_netmsg
         while (true)
         {
             if (is_footer(br))
+            {
+                br.read_bits(16);
                 break;
+            }
 
             Boolean entityNumberIncrement = br.read_bool();
 
@@ -738,7 +741,10 @@ namespace hl_netmsg
         while (true)
         {
             if (is_footer(br))
+            {
+                br.read_bits(16);
                 break;
+            }
 
             Boolean removeEntity = br.read_bool();
 
