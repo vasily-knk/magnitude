@@ -98,7 +98,7 @@ namespace hl_netmsg
         auto const bitmask_size_bytes = br.read_bits(3).to_ulong();
         auto const bitmask = br.read_bits(bitmask_size_bytes * 8);
 
-        Verify(desc.size() >= bitmask.size());
+        //Verify(desc.size() >= bitmask.size());
         auto const sz = std::min(desc.size(), bitmask.size());
             
         for (size_t i = 0; i < sz; ++i)

@@ -354,7 +354,7 @@ namespace hl_netmsg
         REFL_END()
 
         byte Index;
-        byte Size;
+        int8_t Size;
         std::array<char, 16> Name;
     };
 

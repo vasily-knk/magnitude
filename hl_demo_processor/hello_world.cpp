@@ -3,6 +3,7 @@
 #include "hl_netmsg.h"
 #include "serialization/io_streams.h"
 #include "msg_reader.h"
+#include "common/stl_helpers.h"
 
 using namespace hl_netmsg;
 
@@ -22,11 +23,8 @@ struct msg_disp_t
             msg_type_e id;
             is.read(reinterpret_cast<uint8_t&>(id));
 
-            std::cout << id << std::endl;
-
             process_msg(id);
         }
-            std::cout << "----" << std::endl;
 
         is_ = nullptr;
     }
@@ -34,11 +32,25 @@ struct msg_disp_t
 private:
     void process_msg(msg_type_e id)
     {
-        if (id >= SVC_NUM_VALUES)
+        if (auto const *um = stl_helpers::map_item(user_msgs_, id))
         {
-            LogWarn("Unsupported msg: " << id);
+            size_t to_skip;
+            if (um->size)
+            {
+                to_skip = *um->size;
+            }
+            else
+            {
+                uint8_t val;
+                is_->read(val);
+                to_skip = val;
+            }
+
+            is_->skip(to_skip);
             return;
         }
+        
+        Verify(id < SVC_NUM_VALUES);
 
         process_msg_cand<SVC_BAD>(id);
     }
@@ -83,10 +95,33 @@ private:
         reader_context_.max_clients = msg.MaxPlayers;
     }    
 
+    void process_msg_impl(msg_t<SVC_NEWUSERMSG> const &msg)
+    {
+        user_msg_t um;
+        if (msg.Size != -1)
+        {
+            Verify(msg.Size >= 0);
+            um.size = msg.Size;
+        }
+
+        auto end = boost::find(msg.Name, '\0');
+        um.name.assign(msg.Name.begin(), end);
+
+        user_msgs_[msg.Index] = um;
+    }    
+
+private:
+    struct user_msg_t
+    {
+        optional<size_t> size;
+        string name;
+    };
+
 private:
     binary::input_stream *is_ = nullptr;
 
     msg_reader::context_t reader_context_;
+    std::map<uint8_t, user_msg_t> user_msgs_;
 };
 
 } // namespace
