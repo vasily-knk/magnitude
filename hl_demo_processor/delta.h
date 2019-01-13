@@ -31,12 +31,11 @@ typedef vector<delta_desc_entry_t> delta_desc_t;
 
 typedef shared_ptr<delta_desc_t const> delta_desc_cptr;
 
-
+typedef boost::variant<string, int32_t, uint32_t, float> delta_struct_entry_t;
 struct delta_struct_t
 {
 	delta_desc_cptr desc;
-
-	vector<boost::any> entries;
+	vector<optional<delta_struct_entry_t>> entries;
 };
 
 delta_struct_t delta_decode_struct(binary::bit_reader &br, delta_desc_cptr desc);

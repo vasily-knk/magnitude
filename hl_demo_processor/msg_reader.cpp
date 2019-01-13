@@ -137,8 +137,12 @@ namespace hl_netmsg
         	Verify(bitmask[4]);
             if (bitmask[4])
                 entry.nbits = br.read_bits(8).to_ulong();
-            if (bitmask[4])
-                br.read_bits(32);
+            
+        	Verify(bitmask[5]);
+        	
+        	uint32_t div = 0;
+        	if (bitmask[5])
+                div = br.read_uint(32);
             if (bitmask[6])
                 br.read_bits(32);
         }
