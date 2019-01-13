@@ -1,6 +1,6 @@
 #pragma once
 #include "reflection/reflection.h"
-#include "delta_desc.h"
+#include "delta.h"
 
 namespace hl_netmsg
 {
@@ -682,7 +682,7 @@ namespace hl_netmsg
     DEF_COMPLEX_MSG(SVC_DELTADESCRIPTION)
     {
         string Name;
-        vector<delta_entry_t> Entries;
+		delta_desc_t Entries;
     };
 
     DEF_COMPLEX_MSG(SVC_RESOURCELIST)

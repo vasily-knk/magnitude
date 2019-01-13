@@ -17,7 +17,7 @@ enum delta_flags_e
 };
 
     
-struct delta_entry_t
+struct delta_desc_entry_t
 {
 
     uint32_t flags;
@@ -27,8 +27,18 @@ struct delta_entry_t
     uint8_t nbits;
 };
 
-typedef vector<delta_entry_t> delta_desc_t;
+typedef vector<delta_desc_entry_t> delta_desc_t;
 
-typedef std::map<string, delta_desc_t> delta_desc_map_t;
+typedef shared_ptr<delta_desc_t const> delta_desc_cptr;
+
+
+struct delta_struct_t
+{
+	delta_desc_cptr desc;
+
+	vector<boost::any> entries;
+};
+
+delta_struct_t delta_decode_struct(binary::bit_reader &br, delta_desc_cptr desc);
 
 } // namespace hl_netmsg

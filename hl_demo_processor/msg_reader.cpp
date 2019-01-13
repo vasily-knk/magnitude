@@ -1,25 +1,23 @@
 #include "msg_reader.h"
 #include "bit_reader.h"
-#include "delta_desc.h"
 
 namespace hl_netmsg
 {
-    namespace 
-    {
-        
-        string read_string(bit_reader &br)
-        {
-            std::stringstream ss;
-            while (true)
-            {
-                auto const c = char(br.read_bits(8).to_ulong());
-                if (c == '\0')
-                    break;
-                ss << c;
-            }
 
-            return ss.str();            
+    string read_string(binary::bit_reader &br)
+    {
+        std::stringstream ss;
+        while (true)
+        {
+            auto const c = char(br.read_bits(8).to_ulong());
+            if (c == '\0')
+                break;
+            ss << c;
         }
+
+        return ss.str();            
+    }
+
 
         string read_string(binary::input_stream &is)
         {
@@ -38,6 +36,12 @@ namespace hl_netmsg
 
             return ss.str();            
         }
+	namespace 
+    {
+
+		using binary::bit_reader;
+        
+
 
         float read_coord(bit_reader &br)
         {
@@ -92,28 +96,6 @@ namespace hl_netmsg
 
             return vec;
         }
-    
-    void skip_delta_compressed(bit_reader &br, delta_desc_t const &desc)
-    {
-        auto const bitmask_size_bytes = br.read_bits(3).to_ulong();
-        auto const bitmask = br.read_bits(bitmask_size_bytes * 8);
-
-        //Verify(desc.size() >= bitmask.size());
-        auto const sz = std::min(desc.size(), bitmask.size());
-            
-        for (size_t i = 0; i < sz; ++i)
-        {
-            if (!bitmask[i])
-                continue;
-
-            auto const &e = desc.at(i);
-            
-            if (e.flags & DF_String)
-                read_string(br);
-            else
-                br.read_bits(e.nbits);
-        }
-    }
 
 
     } // namespace 
@@ -134,39 +116,32 @@ namespace hl_netmsg
                                      
         msg.Entries.resize(num_entries);
 
-        auto last_entry = context_.last_entry;
-        
         for (auto &entry : msg.Entries)
         {
             auto const bitmask_size_bytes = br.read_bits(3).to_ulong();
             auto const bitmask = br.read_bits(bitmask_size_bytes * 8);
 
-            Verify(last_entry || bitmask.to_ulong() == 0x7F);
-
-            if (last_entry)
-                entry = *last_entry;
-
+            Verify(bitmask[0]);
             if (bitmask[0])
                 entry.flags = br.read_bits(32).to_ulong();
 
-            if (bitmask[1])
+            Verify(bitmask[1]);
+        	if (bitmask[1])
                 entry.name = read_string(br);
 
             if (bitmask[2])
                 entry.offset = br.read_bits(16).to_ulong();
             if (bitmask[3])
                 entry.size = br.read_bits(8).to_ulong();
+            
+        	Verify(bitmask[4]);
             if (bitmask[4])
                 entry.nbits = br.read_bits(8).to_ulong();
             if (bitmask[4])
                 br.read_bits(32);
             if (bitmask[6])
                 br.read_bits(32);
-
-            last_entry = entry;
         }
-
-        int aaa = 6;
     }
 
     void msg_reader::read_msg(msg_t<SVC_RESOURCELIST>& msg)
@@ -224,30 +199,9 @@ namespace hl_netmsg
             }
 
             auto const entityType = br.read_uint(2);
-            char const *entityTypeString = nullptr;
 
-            bool isPlayer = false;
-                
-            if ((entityType & 1) != 0) // is bit 1 set?
-            {
-                Verify(context_.max_clients);
-                
-                if (entityIndex > 0 && entityIndex <= *context_.max_clients)
-                {
-                    entityTypeString = "entity_state_player_t";
-                    isPlayer = true;
-                }
-                else
-                {
-                    entityTypeString = "entity_state_t";
-                }
-            }
-            else
-            {
-                entityTypeString = "custom_entity_state_t";
-            }
-
-            skip_delta_compressed(br, context_.delta_desc_map.at(entityTypeString));
+			bool const custom = (entityType & 1) == 0;
+			read_entity_delta(br, entityIndex, custom);
         }
 
         Verify(br.read_uint(5) == (1 << 5) - 1);
@@ -256,7 +210,7 @@ namespace hl_netmsg
 
         for (size_t i = 0; i < nExtraData; i++)
         {
-            skip_delta_compressed(br, context_.delta_desc_map.at("entity_state_t"));
+            delta_decode_struct(br, context_.delta_desc_map.at("entity_state_t"));
         }
     }
 
@@ -271,13 +225,13 @@ namespace hl_netmsg
             br.read_uint(8); // delta sequence number
         }
 
-        skip_delta_compressed(br, context_.delta_desc_map.at("clientdata_t"));
+        delta_decode_struct(br, context_.delta_desc_map.at("clientdata_t"));
             
         while (br.read_bool())
         {
             br.read_uint(6); // weapon index
 
-            skip_delta_compressed(br, context_.delta_desc_map.at("weapon_data_t"));
+            delta_decode_struct(br, context_.delta_desc_map.at("weapon_data_t"));
         }
 
     }
@@ -607,7 +561,7 @@ namespace hl_netmsg
 
         br.read_uint(10); // event index
 
-        skip_delta_compressed(br, context_.delta_desc_map.at("event_t"));
+        delta_decode_struct(br, context_.delta_desc_map.at("event_t"));
 
         auto const delayBit = br.read_bool();
 
@@ -636,7 +590,7 @@ namespace hl_netmsg
 
                 if (deltaBit)
                 {
-                    skip_delta_compressed(br, context_.delta_desc_map.at("event_t"));
+                    delta_decode_struct(br, context_.delta_desc_map.at("event_t"));
                 }
             }
 
@@ -710,19 +664,7 @@ namespace hl_netmsg
                 br.read_bits(6); // baseline index
             }
 
-            char const *entityType = "entity_state_t";
-
-            Verify(context_.max_clients);
-            if (entityNumber > 0 && entityNumber <= *context_.max_clients)
-            {
-                entityType = "entity_state_player_t";
-            }
-            else if (custom)
-            {
-                entityType = "custom_entity_state_t";
-            }
-
-            skip_delta_compressed(br, context_.delta_desc_map.at(entityType));
+			read_entity_delta(br, entityNumber, custom);
 
         }
 
@@ -764,20 +706,7 @@ namespace hl_netmsg
             {
                 Boolean custom = br.read_bool();
 
-                char const *entityType = "entity_state_t";
-
-                Verify(context_.max_clients);
-                if (entityNumber > 0 && entityNumber <= *context_.max_clients)
-                {
-                    entityType = "entity_state_player_t";
-                }
-                else if (custom)
-                {
-                    entityType = "custom_entity_state_t";
-                }
-
-                skip_delta_compressed(br, context_.delta_desc_map.at(entityType));
-
+				read_entity_delta(br, entityNumber, custom);
             }
         }
 
@@ -801,7 +730,25 @@ namespace hl_netmsg
         return false;
     }
 
-    void msg_reader::read_field(string& value)
+	void msg_reader::read_entity_delta(bit_reader& br, uint32_t entity_number, bool custom)
+	{
+        char const *entityType = "entity_state_t";
+
+        Verify(context_.max_clients);
+        if (entity_number > 0 && entity_number <= *context_.max_clients)
+        {
+            entityType = "entity_state_player_t";
+        }
+        else if (custom)
+        {
+            entityType = "custom_entity_state_t";
+        }
+
+        delta_decode_struct(br, context_.delta_desc_map.at(entityType));
+
+    }
+
+	void msg_reader::read_field(string& value)
     {
         value = read_string(is);
     }

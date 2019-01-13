@@ -3,6 +3,9 @@
 #include "serialization/io_streams.h"
 #include <boost/dynamic_bitset.hpp>
 
+namespace binary
+{
+
 struct bit_reader
 {
     typedef boost::dynamic_bitset<uint8_t> bitset_t;
@@ -69,3 +72,5 @@ private:
     binary::input_stream &is_;
     bitset_t remaining_;
 };
+
+} //namespace binary

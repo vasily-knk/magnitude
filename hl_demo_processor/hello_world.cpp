@@ -95,10 +95,7 @@ private:
 
     void process_msg_impl(msg_t<SVC_DELTADESCRIPTION> const &msg)
     {
-        if (!msg.Entries.empty())
-            reader_context_.last_entry = msg.Entries.back();
-
-        reader_context_.delta_desc_map[msg.Name] = msg.Entries;
+        reader_context_.delta_desc_map[msg.Name] = make_shared<delta_desc_t>(msg.Entries);
     }
 
     void process_msg_impl(msg_t<SVC_SERVERINFO> const &msg)

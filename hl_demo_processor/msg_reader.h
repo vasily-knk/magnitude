@@ -2,8 +2,8 @@
 
 #include "hl_netmsg.h"
 #include "serialization/io_streams.h"
+#include "delta.h"
 
-struct bit_reader;
 
 namespace hl_netmsg
 {
@@ -11,7 +11,8 @@ namespace hl_netmsg
     {
         struct context_t
         {
-            optional<delta_entry_t> last_entry;
+            typedef std::map<string, delta_desc_cptr> delta_desc_map_t;
+        	
             delta_desc_map_t delta_desc_map;
             optional<uint32_t> max_clients;
         };
@@ -80,7 +81,10 @@ namespace hl_netmsg
         void read_msg(msg_t<SVC_DELTAPACKETENTITIES>& msg);
 
     private:
+		typedef binary::bit_reader bit_reader;
+
         bool is_footer(bit_reader const &br) const;
+		void read_entity_delta(bit_reader &br, uint32_t entity_number, bool custom);
 
         typedef uint32_t UInt32;
         typedef uint16_t UInt16;
@@ -116,3 +120,4 @@ namespace hl_netmsg
         context_t const& context_;
     };
 } // namespace hl_netmsg
+
