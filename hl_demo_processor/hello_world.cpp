@@ -13,6 +13,18 @@ using namespace hl_netmsg;
 namespace 
 {
 
+struct clientdata_t
+{
+    point_3f origin;
+    point_3f velocity;
+    
+    REFL_INNER(clientdata_t)
+        REFL_ENTRY(origin)
+        REFL_ENTRY(velocity)
+    REFL_END()
+};
+
+
 struct msg_disp_t         
 {
     ~msg_disp_t()
@@ -32,6 +44,7 @@ struct msg_disp_t
 
             process_msg(id);
         }
+
 
         is_ = nullptr;
     }
@@ -95,7 +108,11 @@ private:
 
     void process_msg_impl(msg_t<SVC_DELTADESCRIPTION> const &msg)
     {
-        reader_context_.delta_desc_map[msg.Name] = make_shared<delta_desc_t>(msg.Entries);
+        auto desc = make_shared<delta_desc_t>(msg.Entries);
+        reader_context_.delta_desc_map[msg.Name] = desc;
+
+        if (!clientdata_mapping_ && msg.Name == "clientdata_t")
+            clientdata_mapping_ = boost::in_place(desc);
     }
 
     void process_msg_impl(msg_t<SVC_SERVERINFO> const &msg)
@@ -118,6 +135,19 @@ private:
         user_msgs_[msg.Index] = um;
     }    
 
+    void process_msg_impl(msg_t<SVC_CLIENTDATA> const &msg)
+    {
+        Verify(clientdata_mapping_);
+        clientdata_mapping_->apply_delta(clientdata_, msg.client_data);
+
+        out_ 
+            << clientdata_.origin.x << "\t"
+            << clientdata_.origin.y << "\t"
+            << clientdata_.origin.z << "\n"
+        ;
+
+    }
+
 private:
     struct user_msg_t
     {
@@ -131,6 +161,11 @@ private:
     msg_reader::context_t reader_context_;
     std::map<uint8_t, user_msg_t> user_msgs_;
     stats_counter_t<msg_type_e> msg_stats_;
+
+    optional<delta_struct_mapping_t<clientdata_t>> clientdata_mapping_;
+    clientdata_t clientdata_;
+
+    std::ofstream out_ = std::ofstream("aaa.txt");
 };
 
 } // namespace

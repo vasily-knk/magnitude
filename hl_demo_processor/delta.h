@@ -55,6 +55,108 @@ struct delta_struct_t
 #endif
 };
 
+template<typename Struct>
+struct delta_struct_mapping_t
+{
+    explicit delta_struct_mapping_t(delta_desc_cptr desc, Struct const &s = Struct())
+        : desc_(desc)
+    {
+        init_processor proc(*this);
+        reflect(proc, s);
+    }
+
+    void apply_delta(Struct const &s, delta_struct_t const &delta) const
+    {
+        Verify(delta.desc == desc_);
+
+        apply_processor proc(*this, delta);
+        reflect(proc, s);
+    }
+
+private:
+    struct init_processor
+    {
+        explicit init_processor(delta_struct_mapping_t& owner)
+            : owner_(owner)
+        {
+        }
+
+        template<typename T>
+        void operator()(T const &, char const *name, ...)
+        {
+            auto const it = boost::find_if(*owner_.desc_, [name](delta_desc_entry_t const &e){
+                return e.name == name;
+            });
+
+            Verify(it != owner_.desc_->end());
+            
+            owner_.mapping_.push_back(it - owner_.desc_->begin());
+        }
+
+        template<typename T>
+        void operator()(geom::point_t<T, 3> const &p, char const *name_cstr, ...)
+        {
+            string const name = name_cstr;
+            (*this)(p.x, (name + "[0]").c_str());
+            (*this)(p.y, (name + "[1]").c_str());
+            (*this)(p.z, (name + "[2]").c_str());
+        }
+
+    private:
+        delta_struct_mapping_t &owner_;
+    };
+
+    struct apply_processor
+    {
+        
+        explicit apply_processor(delta_struct_mapping_t const& owner, delta_struct_t const &delta)
+            : owner_(owner)
+            , delta_(delta)
+        {
+        }
+
+        template<typename T>
+        void operator()(T &e, ...)
+        {
+            apply_internal(e);
+            ++index_;
+        }
+
+        template<typename T>
+        void operator()(geom::point_t<T, 3> &p, ...)
+        {
+            (*this)(p.x);
+            (*this)(p.y);
+            (*this)(p.z);
+        }
+
+    private:
+        template<typename T>
+        void apply_internal(T &e) const
+        {
+            auto const delta_index = owner_.mapping_.at(index_);
+            if (delta_index >= delta_.entries.size())
+                return;
+
+            auto const &delta_val_opt = delta_.entries.at(delta_index);
+            if (!delta_val_opt)
+                return;
+
+            e = boost::get<T>(*delta_val_opt);
+        }
+
+    private:
+        delta_struct_mapping_t const &owner_;
+        delta_struct_t const &delta_;
+        size_t index_ = 0;
+    };
+
+    
+private:
+    delta_desc_cptr desc_;
+    std::vector<size_t> mapping_;
+};
+
 delta_struct_t delta_decode_struct(binary::bit_reader &br, delta_desc_cptr desc);
 
 } // namespace hl_netmsg
