@@ -733,6 +733,12 @@ namespace hl_netmsg
         optional<render_params_t> RenderParams;
     };
 
+    DEF_COMPLEX_MSG(SVC_CLIENTDATA)
+    {
+        delta_struct_t client_data;
+        vector<delta_struct_t> weapon_data;
+    };
+
 
 #undef DEF_MSG
 } // namespace hl_netmsg

@@ -20,11 +20,12 @@ enum delta_flags_e
 struct delta_desc_entry_t
 {
 
-    uint32_t flags;
+    uint32_t flags = 0;
     string name;
-    uint16_t offset;
-    uint8_t size;
-    uint8_t nbits;
+    uint16_t offset = 0;
+    uint8_t size = 0;
+    uint8_t nbits = 0;
+    float divisor = 0;
 };
 
 typedef vector<delta_desc_entry_t> delta_desc_t;
@@ -32,10 +33,26 @@ typedef vector<delta_desc_entry_t> delta_desc_t;
 typedef shared_ptr<delta_desc_t const> delta_desc_cptr;
 
 typedef boost::variant<string, int32_t, uint32_t, float> delta_struct_entry_t;
+typedef optional<delta_struct_entry_t> delta_struct_entry_opt_t;
+
+
+template<typename T>
+delta_struct_entry_t make_delta_struct_entry(T const &val)
+{
+    return val;
+}
+    
 struct delta_struct_t
 {
 	delta_desc_cptr desc;
-	vector<optional<delta_struct_entry_t>> entries;
+	vector<delta_struct_entry_opt_t> entries;
+
+#ifndef NDEBUG
+    std::map<string, string> debug_strings;
+    std::map<string, int32_t> debug_ints;
+    std::map<string, uint32_t> debug_uints;
+    std::map<string, float> debug_floats;
+#endif
 };
 
 delta_struct_t delta_decode_struct(binary::bit_reader &br, delta_desc_cptr desc);

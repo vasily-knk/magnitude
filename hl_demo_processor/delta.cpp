@@ -9,17 +9,22 @@ string read_string(binary::bit_reader &br);
 namespace
 {	
 	template<typename T>
-	delta_struct_entry_t compose(uint32_t base, uint32_t divisor, bool neg)
+	delta_struct_entry_t compose(uint32_t base, float divisor, bool neg)
 	{
-		return T(base);
+		Verify(std::is_signed_v<T> || !neg);
+	    auto const val = T(base) / T(divisor) * (neg ? -1 : 1);
+
+        static_assert(std::is_same_v<std::remove_cv_t<T>, std::remove_cv_t<decltype(val)>>, "AAA");
+
+        return make_delta_struct_entry(val);
 	}
 
 	delta_struct_entry_t read_entry(binary::bit_reader &br, delta_desc_entry_t const &e)
 	{
         if (e.flags & DF_String)
-            return read_string(br);
+            return make_delta_struct_entry(read_string(br));
 
-		size_t nbits = e.nbits;
+        size_t nbits = e.nbits;
 		bool neg = false;
 
 		bool const is_signed = (e.flags & DF_Signed) != 0;
@@ -30,8 +35,22 @@ namespace
 			--nbits;
 		}
 
-		uint32_t base = br.read_uint(nbits);
-		return base;
+		uint32_t const base = br.read_uint(nbits);
+
+        std::function<delta_struct_entry_t(uint32_t, uint32_t, bool)> compose_f;
+
+        Verify(!(e.flags & DF_Angle) || !is_signed);
+
+        float const divisor = (e.flags & DF_Angle) ? (float(1ul << nbits) / 360.f) : e.divisor;
+	    
+	    if (e.flags & DF_Byte || e.flags & DF_Short || e.flags & DF_Integer)
+            compose_f = is_signed ? compose<int32_t> : compose<uint32_t>;
+        else if (e.flags & DF_Float || e.flags & DF_TimeWindow8 || e.flags & DF_TimeWindowBig || e.flags & DF_Angle)
+            compose_f = compose<float>;
+
+        Verify(compose_f);
+
+		return compose_f(base, divisor, neg);
 		
 	}
 
@@ -48,15 +67,31 @@ delta_struct_t delta_decode_struct(binary::bit_reader &br, delta_desc_cptr desc)
 	delta_struct_t result = {desc};
 	result.entries.resize(desc->size());
 
-            
     for (size_t i = 0; i < sz; ++i)
     {
         if (!bitmask[i])
             continue;
 
         auto const &e = desc->at(i);
-		result.entries.at(i) = read_entry(br, e);
+		auto const val = read_entry(br, e);
+        result.entries.at(i) = val;
+
+#ifndef NDEBUG
+        if (auto const *cval = boost::get<string>(&val))
+            result.debug_strings[e.name] = *cval;
+        if (auto const *cval = boost::get<int32_t>(&val))
+            result.debug_ints[e.name] = *cval;
+        if (auto const *cval = boost::get<uint32_t>(&val))
+            result.debug_uints[e.name] = *cval;
+        if (auto const *cval = boost::get<float>(&val))
+            result.debug_floats[e.name] = *cval;
+#endif
     }
+
+
+
+
+
 
 	return result;
 }

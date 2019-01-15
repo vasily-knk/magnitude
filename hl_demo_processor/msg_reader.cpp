@@ -139,10 +139,8 @@ namespace hl_netmsg
                 entry.nbits = br.read_bits(8).to_ulong();
             
         	Verify(bitmask[5]);
-        	
-        	uint32_t div = 0;
         	if (bitmask[5])
-                div = br.read_uint(32);
+                entry.divisor = float(br.read_uint(32)) / 4000.;
             if (bitmask[6])
                 br.read_bits(32);
         }
@@ -229,15 +227,15 @@ namespace hl_netmsg
             br.read_uint(8); // delta sequence number
         }
 
-        delta_decode_struct(br, context_.delta_desc_map.at("clientdata_t"));
+        msg.client_data = delta_decode_struct(br, context_.delta_desc_map.at("clientdata_t"));
             
         while (br.read_bool())
         {
             br.read_uint(6); // weapon index
 
-            delta_decode_struct(br, context_.delta_desc_map.at("weapon_data_t"));
+            msg.weapon_data.push_back(delta_decode_struct(br, context_.delta_desc_map.at("weapon_data_t")));
         }
-
+        int aaa = 5;
     }
 
     void msg_reader::read_msg(msg_t<SVC_TEMPENTITY>& msg)
@@ -748,8 +746,8 @@ namespace hl_netmsg
             entityType = "custom_entity_state_t";
         }
 
-        delta_decode_struct(br, context_.delta_desc_map.at(entityType));
-
+        auto d = delta_decode_struct(br, context_.delta_desc_map.at(entityType));
+        int aaa = 5;
     }
 
 	void msg_reader::read_field(string& value)
