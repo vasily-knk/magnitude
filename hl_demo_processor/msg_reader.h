@@ -11,15 +11,16 @@ namespace hl_netmsg
     {
         struct context_t
         {
-            typedef std::map<string, delta_desc_cptr> delta_desc_map_t;
+            virtual ~context_t() = default;
         	
-            delta_desc_map_t delta_desc_map;
-            optional<uint32_t> max_clients;
+            virtual delta_desc_cptr get_delta_desc(string const &name) const = 0;
+            virtual delta_desc_cptr get_entity_delta_desc(uint32_t index, bool custom) const = 0;
+
         };
 
         explicit msg_reader(binary::input_stream& is, context_t const& context)
             : is(is)
-              , context_(context)
+            , context_(context)
         {
         }
 
@@ -84,7 +85,7 @@ namespace hl_netmsg
 		typedef binary::bit_reader bit_reader;
 
         bool is_footer(bit_reader const &br) const;
-		void read_entity_delta(bit_reader &br, uint32_t entity_number, bool custom);
+		delta_struct_t read_entity_delta(bit_reader &br, uint32_t entity_number, bool custom);
 
         typedef uint32_t UInt32;
         typedef uint16_t UInt16;

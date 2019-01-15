@@ -37,7 +37,7 @@ namespace
 
 		uint32_t const base = br.read_uint(nbits);
 
-        std::function<delta_struct_entry_t(uint32_t, uint32_t, bool)> compose_f;
+        std::function<delta_struct_entry_t(uint32_t, float, bool)> compose_f;
 
         Verify(!(e.flags & DF_Angle) || !is_signed);
 

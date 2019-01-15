@@ -55,28 +55,19 @@ struct delta_struct_t
 #endif
 };
 
-template<typename Struct>
-struct delta_struct_mapping_t
+
+namespace detail
 {
-    explicit delta_struct_mapping_t(delta_desc_cptr desc, Struct const &s = Struct())
-        : desc_(desc)
+    struct delta_struct_mapping_base_t
     {
-        init_processor proc(*this);
-        reflect(proc, s);
-    }
-
-    void apply_delta(Struct const &s, delta_struct_t const &delta) const
-    {
-        Verify(delta.desc == desc_);
-
-        apply_processor proc(*this, delta);
-        reflect(proc, s);
-    }
-
-private:
+        delta_desc_cptr desc_;
+        std::vector<size_t> mapping_;        
+    };
+    
+    
     struct init_processor
     {
-        explicit init_processor(delta_struct_mapping_t& owner)
+        explicit init_processor(delta_struct_mapping_base_t& owner)
             : owner_(owner)
         {
         }
@@ -103,13 +94,13 @@ private:
         }
 
     private:
-        delta_struct_mapping_t &owner_;
+        delta_struct_mapping_base_t &owner_;
     };
 
     struct apply_processor
     {
         
-        explicit apply_processor(delta_struct_mapping_t const& owner, delta_struct_t const &delta)
+        explicit apply_processor(delta_struct_mapping_base_t const& owner, delta_struct_t const &delta)
             : owner_(owner)
             , delta_(delta)
         {
@@ -146,15 +137,32 @@ private:
         }
 
     private:
-        delta_struct_mapping_t const &owner_;
+        delta_struct_mapping_base_t const &owner_;
         delta_struct_t const &delta_;
         size_t index_ = 0;
     };
 
-    
-private:
-    delta_desc_cptr desc_;
-    std::vector<size_t> mapping_;
+
+} // namespace detail
+
+template<typename Struct>
+struct delta_struct_mapping_t
+    : private detail::delta_struct_mapping_base_t
+{
+    explicit delta_struct_mapping_t(delta_desc_cptr desc, Struct const &s = Struct())
+        : delta_struct_mapping_base_t{desc}
+    {
+        detail::init_processor proc(*this);
+        reflect(proc, s);
+    }
+
+    void apply_delta(Struct const &s, delta_struct_t const &delta) const
+    {
+        Verify(delta.desc == desc_);
+
+        detail::apply_processor proc(*this, delta);
+        reflect(proc, s);
+    }
 };
 
 delta_struct_t delta_decode_struct(binary::bit_reader &br, delta_desc_cptr desc);

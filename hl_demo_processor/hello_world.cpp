@@ -24,12 +24,29 @@ struct clientdata_t
     REFL_END()
 };
 
+struct entity_state_t
+{
+    point_3f origin;
+    point_3f mins;
+    point_3f maxs;
+    uint32_t modelindex = 0;
+    
+    REFL_INNER(entity_state_t)
+        REFL_ENTRY(origin)
+        REFL_ENTRY(mins)
+        REFL_ENTRY(maxs)
+        REFL_ENTRY(modelindex)
+    REFL_END()
+};
 
-struct msg_disp_t         
+
+struct msg_disp_t 
+    : private msg_reader::context_t
 {
     ~msg_disp_t()
     {
-        auto const stats = msg_stats_.sorted();
+        auto const msg_stats = msg_stats_.sorted();
+        auto const upd_stats = update_stats_.sorted();
         int aaa = 5;
     }
     
@@ -86,7 +103,7 @@ private:
             return process_msg_cand<msg_type_e(Id + 1)>(id);
 
         msg_t<Id> msg;
-        msg_reader p(*is_, reader_context_);
+        msg_reader p(*is_, *this);
         p.read_msg(msg);           
 
         process_msg_impl(msg);
@@ -109,15 +126,30 @@ private:
     void process_msg_impl(msg_t<SVC_DELTADESCRIPTION> const &msg)
     {
         auto desc = make_shared<delta_desc_t>(msg.Entries);
-        reader_context_.delta_desc_map[msg.Name] = desc;
+        delta_descs_[msg.Name] = desc;
 
-        if (!clientdata_mapping_ && msg.Name == "clientdata_t")
-            clientdata_mapping_ = boost::in_place(desc);
+        {
+            auto &m = clientdata_mapping_;
+            if (!m && msg.Name == "clientdata_t")
+                m = boost::in_place(desc);
+        }
+
+        {
+            auto &m = entity_state_mapping_;
+            if (!m && msg.Name == "entity_state_t")
+                m = boost::in_place(desc);
+        }
+
+        {
+            auto &m = entity_state_player_mapping_;
+            if (!m && msg.Name == "entity_state_player_t")
+                m = boost::in_place(desc);
+        }
     }
 
     void process_msg_impl(msg_t<SVC_SERVERINFO> const &msg)
     {
-        reader_context_.max_clients = msg.MaxPlayers;
+        max_clients_ = msg.MaxPlayers;
     }    
 
     void process_msg_impl(msg_t<SVC_NEWUSERMSG> const &msg)
@@ -140,12 +172,85 @@ private:
         Verify(clientdata_mapping_);
         clientdata_mapping_->apply_delta(clientdata_, msg.client_data);
 
-        out_ 
-            << clientdata_.origin.x << "\t"
-            << clientdata_.origin.y << "\t"
-            << clientdata_.origin.z << "\n"
-        ;
 
+    }
+
+    void process_msg_impl(msg_t<SVC_SPAWNBASELINE> const &msg)
+    {
+        for (auto const &e : msg.ents)
+        {
+            if (e.custom)
+                continue;
+            
+            ents_[e.index] = entity_state_t();
+
+            apply_entity_delta(e.index, e.baseline);
+        }
+    }
+
+    void process_msg_impl(msg_t<SVC_PACKETENTITIES> const &msg)
+    {
+        for (auto const &e : msg.ents)
+            apply_entity_delta(e.index, e.delta);
+    }
+
+    void process_msg_impl(msg_t<SVC_DELTAPACKETENTITIES> const &msg)
+    {
+        for (auto const &e : msg.ents)
+            apply_entity_delta(e.index, e.delta);
+    }
+
+    void process_msg_impl(msg_t<SVC_RESOURCELIST> const &msg)
+    {
+        for (auto const &r : msg.Resources)
+        {
+            if (r.type == 2)
+                models_[r.index] = r.name;
+        }
+    }
+    
+private:
+    void apply_entity_delta(uint32_t index, delta_struct_t const &delta)
+    {
+        auto &state = ents_[index];
+        if (is_player(index))
+        {
+            auto &m = entity_state_player_mapping_;
+            Verify(m);
+            m->apply_delta(state, delta);
+        } 
+        else 
+        {
+            auto &m = entity_state_mapping_;
+            Verify(m);
+            m->apply_delta(state, delta);
+        }
+
+        update_stats_.add(models_.at(state.modelindex));
+    }
+
+
+private:
+    delta_desc_cptr get_delta_desc(string const& name) const override
+    {
+        return delta_descs_.at(name);
+    }
+
+    delta_desc_cptr get_entity_delta_desc(uint32_t index, bool custom) const override
+    {
+        if (custom)
+            return get_delta_desc("custom_entity_state_t");
+
+        if (is_player(index))
+            return get_delta_desc("entity_state_player_t");
+
+        return get_delta_desc("entity_state_t");
+    }
+private:
+    bool is_player(uint32_t index) const
+    {
+        Verify(max_clients_);
+        return index > 0 && index <= *max_clients_;        
     }
 
 private:
@@ -158,14 +263,22 @@ private:
 private:
     binary::input_stream *is_ = nullptr;
 
-    msg_reader::context_t reader_context_;
+    std::map<string, delta_desc_cptr> delta_descs_;
+    optional<uint32_t> max_clients_;
     std::map<uint8_t, user_msg_t> user_msgs_;
     stats_counter_t<msg_type_e> msg_stats_;
 
     optional<delta_struct_mapping_t<clientdata_t>> clientdata_mapping_;
+    optional<delta_struct_mapping_t<entity_state_t>> entity_state_mapping_;
+    optional<delta_struct_mapping_t<entity_state_t>> entity_state_player_mapping_;
     clientdata_t clientdata_;
 
+    std::map<uint32_t, entity_state_t> ents_;
+
     std::ofstream out_ = std::ofstream("aaa.txt");
+
+    stats_counter_t<string> update_stats_;
+    std::map<uint32_t, string> models_;
 };
 
 } // namespace

@@ -739,6 +739,41 @@ namespace hl_netmsg
         vector<delta_struct_t> weapon_data;
     };
 
+    DEF_COMPLEX_MSG(SVC_SPAWNBASELINE)
+    {
+        struct ent_t
+        {
+            uint32_t index = 0;
+            bool custom = false;
+            delta_struct_t baseline;
+        };
 
+        vector<ent_t> ents;
+        vector<delta_struct_t> instanced_baselines;
+    };
+
+    DEF_COMPLEX_MSG(SVC_PACKETENTITIES)
+    {
+        struct ent_t
+        {
+            uint32_t index = 0;
+            optional<uint32_t> baseline_index;
+            delta_struct_t delta;
+        };
+
+        vector<ent_t> ents;
+    };
+    DEF_COMPLEX_MSG(SVC_DELTAPACKETENTITIES)
+    {
+        struct ent_t
+        {
+            uint32_t index = 0;
+            delta_struct_t delta;
+        };
+
+        uint8_t source_frame;
+        vector<ent_t> ents;
+        vector<uint32_t> to_remove;
+    };
 #undef DEF_MSG
 } // namespace hl_netmsg

@@ -203,7 +203,9 @@ namespace hl_netmsg
             auto const entityType = br.read_uint(2);
 
 			bool const custom = (entityType & 1) == 0;
-			read_entity_delta(br, entityIndex, custom);
+			auto delta = read_entity_delta(br, entityIndex, custom);
+
+            msg.ents.push_back({entityIndex, custom, delta});
         }
 
         Verify(br.read_uint(5) == (1 << 5) - 1);
@@ -212,7 +214,7 @@ namespace hl_netmsg
 
         for (size_t i = 0; i < nExtraData; i++)
         {
-            delta_decode_struct(br, context_.delta_desc_map.at("entity_state_t"));
+            msg.instanced_baselines.push_back(delta_decode_struct(br, context_.get_delta_desc("entity_state_t")));
         }
     }
 
@@ -227,13 +229,13 @@ namespace hl_netmsg
             br.read_uint(8); // delta sequence number
         }
 
-        msg.client_data = delta_decode_struct(br, context_.delta_desc_map.at("clientdata_t"));
+        msg.client_data = delta_decode_struct(br, context_.get_delta_desc("clientdata_t"));
             
         while (br.read_bool())
         {
             br.read_uint(6); // weapon index
 
-            msg.weapon_data.push_back(delta_decode_struct(br, context_.delta_desc_map.at("weapon_data_t")));
+            msg.weapon_data.push_back(delta_decode_struct(br, context_.get_delta_desc("weapon_data_t")));
         }
         int aaa = 5;
     }
@@ -563,7 +565,7 @@ namespace hl_netmsg
 
         br.read_uint(10); // event index
 
-        delta_decode_struct(br, context_.delta_desc_map.at("event_t"));
+        delta_decode_struct(br, context_.get_delta_desc("event_t"));
 
         auto const delayBit = br.read_bool();
 
@@ -592,7 +594,7 @@ namespace hl_netmsg
 
                 if (deltaBit)
                 {
-                    delta_decode_struct(br, context_.delta_desc_map.at("event_t"));
+                    delta_decode_struct(br, context_.get_delta_desc("event_t"));
                 }
             }
 
@@ -660,14 +662,16 @@ namespace hl_netmsg
 
             Boolean custom = br.read_bool();
             Boolean useBaseline = br.read_bool();
+            optional<uint32_t> baseline_index;
 
             if (useBaseline)
             {
-                br.read_bits(6); // baseline index
+                baseline_index = br.read_uint(6); // baseline index
             }
 
-			read_entity_delta(br, entityNumber, custom);
-
+			auto delta = read_entity_delta(br, entityNumber, custom);
+            
+            msg.ents.push_back({entityNumber, baseline_index, delta});
         }
 
     }
@@ -676,7 +680,8 @@ namespace hl_netmsg
     {
         uint16_t num_ents;
         is.read(num_ents);
-        is.skip(1);
+
+        is.read(msg.source_frame);
 
         UInt32 entityNumber = 0;
 
@@ -704,11 +709,16 @@ namespace hl_netmsg
                 entityNumber += br.read_uint(6);
             }
 
-            if (!removeEntity)
+            if (removeEntity)
+            {
+                msg.to_remove.push_back(entityNumber);
+            }
+            else
             {
                 Boolean custom = br.read_bool();
 
-				read_entity_delta(br, entityNumber, custom);
+				auto delta = read_entity_delta(br, entityNumber, custom);
+                msg.ents.push_back({entityNumber, delta});
             }
         }
 
@@ -732,22 +742,9 @@ namespace hl_netmsg
         return false;
     }
 
-	void msg_reader::read_entity_delta(bit_reader& br, uint32_t entity_number, bool custom)
+	delta_struct_t msg_reader::read_entity_delta(bit_reader& br, uint32_t entity_number, bool custom)
 	{
-        char const *entityType = "entity_state_t";
-
-        Verify(context_.max_clients);
-        if (entity_number > 0 && entity_number <= *context_.max_clients)
-        {
-            entityType = "entity_state_player_t";
-        }
-        else if (custom)
-        {
-            entityType = "custom_entity_state_t";
-        }
-
-        auto d = delta_decode_struct(br, context_.delta_desc_map.at(entityType));
-        int aaa = 5;
+        return delta_decode_struct(br, context_.get_entity_delta_desc(entity_number, custom));
     }
 
 	void msg_reader::read_field(string& value)
