@@ -225,8 +225,6 @@ private:
             Verify(m);
             m->apply_delta(state, delta);
         }
-
-        update_stats_.add(models_.at(state.modelindex));
     }
 
 
@@ -284,18 +282,31 @@ private:
 } // namespace
 
 
-
-int main()
+bool process_demo(fs::path const &filename)
 {
-    
-    DemoFile df("data/mydemo1.dem", true);
+    optional<DemoFile> df;
 
-        msg_disp_t disp;
-
-    for (auto const &dir : df.directoryEntries)
+    try
     {
-        int aaa = 5;
-        
+        DemoFile df_cand(filename.c_str(), true);
+        df = std::move(df_cand);
+    } 
+    catch (std::exception const &)
+    {
+        return false;
+    }
+
+    if (df->header.netProtocol < 47)
+        return false;
+
+
+    msg_disp_t disp;
+
+    try
+    {
+
+    for (auto const &dir : df->directoryEntries)
+    {
         for (auto const &frame : dir.frames)
         {
             auto const frame_type_id = uint8_t(frame->type);
@@ -307,10 +318,42 @@ int main()
             auto const & data = msg_frame->msg;
             binary::input_stream is(data.data(), data.size());
             disp.go(is);
-
         }
     }
 
+    }
+    catch (std::exception const &)
+    {
+        return false;
+    }
+    return true;
+}
+
+int main()
+{
+    stats_counter_t<int32_t> protocol_stats;
+    
+    fs::recursive_directory_iterator const beg("E:/csdemos"), end;
+
+    size_t good = 0, bad = 0;
+    for (auto it = beg; it != end; ++it)
+    {
+        if (!fs::is_regular_file(it->path()))
+            continue;
+
+        if (it->path().extension() != ".dem")
+            continue;
+
+        if (process_demo(it->path()))
+            ++good;
+        else
+            ++bad;
+
+        if ((good + bad) % 10 == 0)
+        {
+            std::cout << good << ", " << bad << std::endl;
+        }
+    }
 
     return 0;
 }
