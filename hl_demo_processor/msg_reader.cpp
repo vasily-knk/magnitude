@@ -170,7 +170,7 @@ namespace hl_netmsg
 
             br.read_uint(1, res.has_extra_info);
             if (res.has_extra_info)
-                br.read_bits(128);
+                br.read_bits(256);
 
         }
 

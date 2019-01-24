@@ -105,6 +105,7 @@ private:
     void read_and_process_msg()
     {
         static_assert(Id < SVC_NUM_VALUES, "Unexpected Id");
+        // out_ << "Msg: " << Id << std::endl;
 
         msg_t<Id> msg;
         msg_reader p(*is_, *this);
@@ -391,6 +392,6 @@ int amain()
 
 int main()
 {
-    process_demo(R"(Z:\InOut\vasya\csdemos\+carpediem.LessMore.de_train.dem)");
+    process_demo(R"(data/+carpediem.LessMore.de_train.dem)");
     return 0;
 }
