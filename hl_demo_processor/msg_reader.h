@@ -15,7 +15,7 @@ namespace hl_netmsg
         	
             virtual delta_desc_cptr get_delta_desc(string const &name) const = 0;
             virtual delta_desc_cptr get_entity_delta_desc(uint32_t index, bool custom) const = 0;
-
+            virtual bool is_hltv() const = 0;
         };
 
         explicit msg_reader(binary::input_stream& is, context_t const& context)
@@ -80,6 +80,7 @@ namespace hl_netmsg
         void read_msg(msg_t<SVC_SPAWNSTATIC>& msg);
         void read_msg(msg_t<SVC_PACKETENTITIES>& msg);
         void read_msg(msg_t<SVC_DELTAPACKETENTITIES>& msg);
+        void read_msg(msg_t<SVC_PINGS>& msg);
 
     private:
 		typedef binary::bit_reader bit_reader;

@@ -220,6 +220,9 @@ namespace hl_netmsg
 
     void msg_reader::read_msg(msg_t<SVC_CLIENTDATA>& msg)
     {
+        if (context_.is_hltv())
+            return;
+
         bit_reader br(is);
         
         auto const deltaSequence = br.read_bool();
@@ -722,6 +725,17 @@ namespace hl_netmsg
             }
         }
 
+    }
+
+    void msg_reader::read_msg(msg_t<SVC_PINGS>& msg)
+    {
+        bit_reader br(is);
+
+        while(br.read_bool())
+        {
+            br.read_uint(24);
+        }
+        
     }
 
     bool msg_reader::is_footer(bit_reader const& br) const

@@ -169,10 +169,11 @@ private:
 
     void process_msg_impl(msg_t<SVC_CLIENTDATA> const &msg)
     {
+        if (is_hltv_)
+            return;
+
         Verify(clientdata_mapping_);
         clientdata_mapping_->apply_delta(clientdata_, msg.client_data);
-
-
     }
 
     void process_msg_impl(msg_t<SVC_SPAWNBASELINE> const &msg)
@@ -207,6 +208,10 @@ private:
             if (r.type == 2)
                 models_[r.index] = r.name;
         }
+    }
+    void process_msg_impl(msg_t<SVC_HLTV> const &)
+    {
+        is_hltv_ = true;
     }
     
 private:
@@ -244,6 +249,14 @@ private:
 
         return get_delta_desc("entity_state_t");
     }
+
+
+public:
+    bool is_hltv() const override
+    {
+        return is_hltv_;
+    }
+
 private:
     bool is_player(uint32_t index) const
     {
@@ -277,6 +290,7 @@ private:
 
     stats_counter_t<string> update_stats_;
     std::map<uint32_t, string> models_;
+    bool is_hltv_ = false;
 };
 
 } // namespace
@@ -329,7 +343,7 @@ bool process_demo(fs::path const &filename)
     return true;
 }
 
-int main()
+int amain()
 {
     stats_counter_t<int32_t> protocol_stats;
     
@@ -355,5 +369,12 @@ int main()
         }
     }
 
+    return 0;
+}
+
+
+int main()
+{
+    process_demo("data/omg23_duttdutt_limbokungen-de_dust2.dem");
     return 0;
 }
