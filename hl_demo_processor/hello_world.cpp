@@ -5,6 +5,7 @@
 #include "msg_reader.h"
 #include "common/stl_helpers.h"
 #include "common/stats_counter.h"
+#include "cpp_utils/bind_mem.h"
 
 using namespace hl_netmsg;
 
@@ -43,6 +44,11 @@ struct entity_state_t
 struct msg_disp_t 
     : private msg_reader::context_t
 {
+    msg_disp_t()
+    {
+        register_base_handler<SVC_BAD>();
+    }
+    
     ~msg_disp_t()
     {
         auto const msg_stats = msg_stats_.sorted();
@@ -92,15 +98,13 @@ private:
         }
         
         Verify(id < SVC_NUM_VALUES);
-
-        process_msg_cand<SVC_BAD>(id_e);
+        base_msg_handlers_.at(id_e)();
     }
 
     template<msg_type_e Id>
-    void process_msg_cand(msg_type_e id, std::enable_if_t<Id < SVC_NUM_VALUES> * = nullptr)
+    void read_and_process_msg()
     {
-        if (Id < id)
-            return process_msg_cand<msg_type_e(Id + 1)>(id);
+        static_assert(Id < SVC_NUM_VALUES, "Unexpected Id");
 
         msg_t<Id> msg;
         msg_reader p(*is_, *this);
@@ -108,13 +112,23 @@ private:
 
         process_msg_impl(msg);
 
-        int aaa = 5;
+        if (msgs_processed_ % 10000 == 0)
+            std::cout << "  " << msgs_processed_ << " msgs processed" << std::endl;
+
+        ++msgs_processed_;
     }
 
     template<msg_type_e Id>
-    void process_msg_cand(msg_type_e, std::enable_if_t<Id == SVC_NUM_VALUES> * = nullptr)
+    void register_base_handler(std::enable_if_t<Id < SVC_NUM_VALUES> * = nullptr)
     {
-        Verify(false);
+        base_msg_handlers_[Id] = BIND_MEM(read_and_process_msg<Id>);
+        register_base_handler<msg_type_e(Id + 1)>();
+    }
+
+    template<msg_type_e Id>
+    void register_base_handler(std::enable_if_t<Id == SVC_NUM_VALUES> * = nullptr)
+    {
+        
     }
 
     template<msg_type_e Id>
@@ -277,7 +291,9 @@ private:
     std::map<string, delta_desc_cptr> delta_descs_;
     optional<uint32_t> max_clients_;
     std::map<uint8_t, user_msg_t> user_msgs_;
+    std::map<msg_type_e, std::function<void()>> base_msg_handlers_;
     stats_counter_t<msg_type_e> msg_stats_;
+
 
     optional<delta_struct_mapping_t<clientdata_t>> clientdata_mapping_;
     optional<delta_struct_mapping_t<entity_state_t>> entity_state_mapping_;
@@ -291,6 +307,8 @@ private:
     stats_counter_t<string> update_stats_;
     std::map<uint32_t, string> models_;
     bool is_hltv_ = false;
+
+    size_t msgs_processed_ = 0;
 };
 
 } // namespace

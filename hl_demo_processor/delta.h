@@ -41,13 +41,17 @@ delta_struct_entry_t make_delta_struct_entry(T const &val)
 {
     return val;
 }
+
+#ifndef NDEBUG
+#    define DEBUG_DELTA_STRUCT
+#endif
     
 struct delta_struct_t
 {
 	delta_desc_cptr desc;
 	vector<delta_struct_entry_opt_t> entries;
 
-#ifndef NDEBUG
+#ifdef DEBUG_DELTA_STRUCT
     std::map<string, string> debug_strings;
     std::map<string, int32_t> debug_ints;
     std::map<string, uint32_t> debug_uints;

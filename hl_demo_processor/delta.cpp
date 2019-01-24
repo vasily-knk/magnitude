@@ -76,7 +76,7 @@ delta_struct_t delta_decode_struct(binary::bit_reader &br, delta_desc_cptr desc)
 		auto const val = read_entry(br, e);
         result.entries.at(i) = val;
 
-#ifndef NDEBUG
+#ifdef DEBUG_DELTA_STRUCT
         if (auto const *cval = boost::get<string>(&val))
             result.debug_strings[e.name] = *cval;
         if (auto const *cval = boost::get<int32_t>(&val))
