@@ -112,7 +112,7 @@ private:
 
         process_msg_impl(msg);
 
-        if (msgs_processed_ % 10000 == 0)
+        if (false && msgs_processed_ % 10000 == 0)
             std::cout << "  " << msgs_processed_ << " msgs processed" << std::endl;
 
         ++msgs_processed_;
@@ -365,7 +365,7 @@ int amain()
 {
     stats_counter_t<int32_t> protocol_stats;
     
-    fs::recursive_directory_iterator const beg("E:/csdemos"), end;
+    fs::recursive_directory_iterator const beg(R"(Z:\InOut\vasya\csdemos)"), end;
 
     size_t good = 0, bad = 0;
     for (auto it = beg; it != end; ++it)
@@ -376,15 +376,13 @@ int amain()
         if (it->path().extension() != ".dem")
             continue;
 
+        std::cout << "Processing " << it->path().string() << std::endl;
         if (process_demo(it->path()))
             ++good;
         else
             ++bad;
 
-        if ((good + bad) % 10 == 0)
-        {
-            std::cout << good << ", " << bad << std::endl;
-        }
+        std::cout << "Good: " << good << ", bad: " << bad << std::endl;
     }
 
     return 0;
@@ -393,6 +391,6 @@ int amain()
 
 int main()
 {
-    process_demo("data/omg23_duttdutt_limbokungen-de_dust2.dem");
+    process_demo(R"(Z:\InOut\vasya\csdemos\+carpediem.LessMore.de_train.dem)");
     return 0;
 }
