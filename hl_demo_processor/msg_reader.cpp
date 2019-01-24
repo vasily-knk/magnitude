@@ -674,7 +674,7 @@ namespace hl_netmsg
 
 			auto delta = read_entity_delta(br, entityNumber, custom);
             
-            msg.ents.push_back({entityNumber, baseline_index, delta});
+            msg.ents.push_back({entityNumber, custom, baseline_index, delta});
         }
 
     }
@@ -721,7 +721,7 @@ namespace hl_netmsg
                 Boolean custom = br.read_bool();
 
 				auto delta = read_entity_delta(br, entityNumber, custom);
-                msg.ents.push_back({entityNumber, delta});
+                msg.ents.push_back({entityNumber, custom, delta});
             }
         }
 

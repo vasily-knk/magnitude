@@ -140,7 +140,13 @@ private:
 
     void process_msg_impl(msg_t<SVC_DELTADESCRIPTION> const &msg)
     {
-        auto desc = make_shared<delta_desc_t>(msg.Entries);
+        auto desc = make_shared<delta_desc_t>();
+        desc->name = msg.Name;
+        desc->entries = msg.Entries;
+
+        if (delta_descs_.count(msg.Name) != 0)
+            return;
+
         delta_descs_[msg.Name] = desc;
 
         {
@@ -207,13 +213,23 @@ private:
     void process_msg_impl(msg_t<SVC_PACKETENTITIES> const &msg)
     {
         for (auto const &e : msg.ents)
+        {
+            if (e.custom)
+                continue;
+
             apply_entity_delta(e.index, e.delta);
+        }
     }
 
     void process_msg_impl(msg_t<SVC_DELTAPACKETENTITIES> const &msg)
     {
         for (auto const &e : msg.ents)
+        {
+            if (e.custom)
+                continue;
+
             apply_entity_delta(e.index, e.delta);
+        }
     }
 
     void process_msg_impl(msg_t<SVC_RESOURCELIST> const &msg)
@@ -392,6 +408,6 @@ int amain()
 
 int main()
 {
-    process_demo(R"(data/+carpediem.LessMore.de_train.dem)");
+    process_demo(R"(data/091107_nclfinal_noffmode_limbokungen_01_dust2.dem)");
     return 0;
 }

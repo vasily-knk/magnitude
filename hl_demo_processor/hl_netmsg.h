@@ -682,7 +682,7 @@ namespace hl_netmsg
     DEF_COMPLEX_MSG(SVC_DELTADESCRIPTION)
     {
         string Name;
-		delta_desc_t Entries;
+		vector<delta_desc_entry_t> Entries;
     };
 
     DEF_COMPLEX_MSG(SVC_RESOURCELIST)
@@ -757,6 +757,7 @@ namespace hl_netmsg
         struct ent_t
         {
             uint32_t index = 0;
+            bool custom = false;
             optional<uint32_t> baseline_index;
             delta_struct_t delta;
         };
@@ -768,6 +769,7 @@ namespace hl_netmsg
         struct ent_t
         {
             uint32_t index = 0;
+            bool custom = false;
             delta_struct_t delta;
         };
 

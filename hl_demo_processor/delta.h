@@ -28,7 +28,11 @@ struct delta_desc_entry_t
     float divisor = 0;
 };
 
-typedef vector<delta_desc_entry_t> delta_desc_t;
+struct delta_desc_t
+{
+    string name;
+    vector<delta_desc_entry_t> entries;
+};
 
 typedef shared_ptr<delta_desc_t const> delta_desc_cptr;
 
@@ -79,13 +83,13 @@ namespace detail
         template<typename T>
         void operator()(T const &, char const *name, ...)
         {
-            auto const it = boost::find_if(*owner_.desc_, [name](delta_desc_entry_t const &e){
+            auto const it = boost::find_if(owner_.desc_->entries, [name](delta_desc_entry_t const &e){
                 return e.name == name;
             });
 
-            Verify(it != owner_.desc_->end());
+            Verify(it != owner_.desc_->entries.end());
             
-            owner_.mapping_.push_back(it - owner_.desc_->begin());
+            owner_.mapping_.push_back(it - owner_.desc_->entries.begin());
         }
 
         template<typename T>

@@ -62,17 +62,17 @@ delta_struct_t delta_decode_struct(binary::bit_reader &br, delta_desc_cptr desc)
     auto const bitmask = br.read_bits(bitmask_size_bytes * 8);
 
     //Verify(desc.size() >= bitmask.size());
-    auto const sz = std::min(desc->size(), bitmask.size());
+    auto const sz = std::min(desc->entries.size(), bitmask.size());
 
 	delta_struct_t result = {desc};
-	result.entries.resize(desc->size());
+	result.entries.resize(desc->entries.size());
 
     for (size_t i = 0; i < sz; ++i)
     {
         if (!bitmask[i])
             continue;
 
-        auto const &e = desc->at(i);
+        auto const &e = desc->entries.at(i);
 		auto const val = read_entry(br, e);
         result.entries.at(i) = val;
 
