@@ -747,6 +747,14 @@ namespace hl_netmsg
             is.skip(21);
     }
 
+    void msg_reader::read_msg(msg_t<SVC_VOICEDATA>& msg)
+    {
+        is.skip(1);
+        uint16_t length;
+        is.read(length);
+        is.skip(length);
+    }
+
     bool msg_reader::is_footer(bit_reader const& br) const
     {
         auto const rem = br.remaining();

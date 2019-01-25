@@ -331,7 +331,17 @@ private:
 } // namespace
 
 
-bool process_demo(fs::path const &filename)
+enum struct process_result
+{
+    ok,
+    read_failed,
+    parse_failed,
+    unsupported_protocol,
+
+    size
+};
+
+process_result process_demo(fs::path const &filename)
 {
     optional<DemoFile> df;
 
@@ -342,11 +352,11 @@ bool process_demo(fs::path const &filename)
     } 
     catch (std::exception const &)
     {
-        return false;
+        return process_result::read_failed;
     }
 
     if (df->header.netProtocol < 47)
-        return false;
+        return process_result::unsupported_protocol;
 
 
     msg_disp_t disp;
@@ -373,18 +383,20 @@ bool process_demo(fs::path const &filename)
     }
     catch (std::exception const &)
     {
-        return false;
+        return process_result::parse_failed;
     }
-    return true;
+    return process_result::ok;
 }
 
-int amain()
+int main()
 {
     stats_counter_t<int32_t> protocol_stats;
     
     fs::recursive_directory_iterator const beg(R"(Z:\InOut\vasya\csdemos)"), end;
 
-    size_t good = 0, bad = 0;
+    std::array<int, size_t(process_result::size)> states;
+    boost::fill(states, 0);
+
     for (auto it = beg; it != end; ++it)
     {
         if (!fs::is_regular_file(it->path()))
@@ -394,20 +406,24 @@ int amain()
             continue;
 
         std::cout << "Processing " << it->path().string() << std::endl;
-        if (process_demo(it->path()))
-            ++good;
-        else
-            ++bad;
 
-        std::cout << "Good: " << good << ", bad: " << bad << std::endl;
+        auto const result = process_demo(it->path());
+        ++states.at(size_t(result));
+
+        std::cout 
+            << "    ok                  : " << states.at(size_t(process_result::ok                  )) << std::endl
+            << "    read_failed         : " << states.at(size_t(process_result::read_failed         )) << std::endl
+            << "    parse_failed        : " << states.at(size_t(process_result::parse_failed        )) << std::endl
+            << "    unsupported_protocol: " << states.at(size_t(process_result::unsupported_protocol)) << std::endl 
+        << std::endl;
     }
 
     return 0;
 }
 
 
-int main()
+int amain()
 {
-    process_demo(R"(data/0tp-trss1.dem)");
+    process_demo(R"(Z:\InOut\vasya\csdemos\2005-07-06_17h51_ICSU_TeamArt-0507061751-de_cbble.dem)");
     return 0;
 }
