@@ -486,36 +486,6 @@ namespace hl_netmsg
         byte CanCheat;
     };
 
-    DEF_MSG(SVC_SERVERINFO)
-    {
-        REFL_INNER(msg_t)
-            REFL_ENTRY(Protocol )
-            REFL_ENTRY(SpawnCount )
-            REFL_ENTRY(MapCRC )
-            REFL_ENTRY(ClientDLLHash)
-            REFL_ENTRY(MaxPlayers )
-            REFL_ENTRY(PlayerIndex )
-            REFL_ENTRY(IsDeathmatch )
-            REFL_ENTRY(GameDir )
-            REFL_ENTRY(Hostname )
-            REFL_ENTRY(MapFileName )
-            REFL_ENTRY(Mapcycle )
-            REFL_ENTRY(Zero )
-        REFL_END()
-
-        long Protocol;
-        long SpawnCount;
-        long MapCRC;
-        std::array<byte, 16> ClientDLLHash;
-        byte MaxPlayers;
-        byte PlayerIndex;
-        byte IsDeathmatch;
-        string GameDir;
-        string Hostname;
-        string MapFileName;
-        string Mapcycle;
-        byte Zero;
-    };
 
     DEF_MSG(SVC_SETANGLE)
     {
@@ -732,6 +702,42 @@ namespace hl_netmsg
 
         optional<render_params_t> RenderParams;
     };
+
+    struct msg_serverinfo_base_t
+    {
+        REFL_INNER(msg_serverinfo_base_t)
+            REFL_ENTRY(Protocol )
+            REFL_ENTRY(SpawnCount )
+            REFL_ENTRY(MapCRC )
+            REFL_ENTRY(ClientDLLHash)
+            REFL_ENTRY(MaxPlayers )
+            REFL_ENTRY(PlayerIndex )
+            REFL_ENTRY(IsDeathmatch )
+            REFL_ENTRY(GameDir )
+            REFL_ENTRY(Hostname )
+            REFL_ENTRY(MapFileName )
+            REFL_ENTRY(Mapcycle )
+            REFL_ENTRY(Zero )
+        REFL_END()
+
+        long Protocol;
+        long SpawnCount;
+        long MapCRC;
+        std::array<byte, 16> ClientDLLHash;
+        byte MaxPlayers;
+        byte PlayerIndex;
+        byte IsDeathmatch;
+        string GameDir;
+        string Hostname;
+        string MapFileName;
+        string Mapcycle;
+        byte Zero;
+    };
+    
+    DEF_COMPLEX_MSG_BASE(SVC_SERVERINFO, msg_serverinfo_base_t)
+    {
+    };
+
 
     DEF_COMPLEX_MSG(SVC_CLIENTDATA)
     {
