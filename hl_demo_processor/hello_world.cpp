@@ -408,6 +408,6 @@ int amain()
 
 int main()
 {
-    process_demo(R"(data/091107_nclfinal_noffmode_limbokungen_01_dust2.dem)");
+    process_demo(R"(data/0tp-trss1.dem)");
     return 0;
 }

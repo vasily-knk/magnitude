@@ -738,6 +738,15 @@ namespace hl_netmsg
         
     }
 
+    void msg_reader::read_msg(msg_t<SVC_SERVERINFO>& msg)
+    {
+        auto &base = static_cast<msg_serverinfo_base_t&>(msg);
+        read_field(base);
+
+        if (base.Zero != 0)
+            is.skip(21);
+    }
+
     bool msg_reader::is_footer(bit_reader const& br) const
     {
         auto const rem = br.remaining();

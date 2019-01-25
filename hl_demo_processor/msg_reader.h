@@ -81,6 +81,7 @@ namespace hl_netmsg
         void read_msg(msg_t<SVC_PACKETENTITIES>& msg);
         void read_msg(msg_t<SVC_DELTAPACKETENTITIES>& msg);
         void read_msg(msg_t<SVC_PINGS>& msg);
+        void read_msg(msg_t<SVC_SERVERINFO>& msg);
 
     private:
 		typedef binary::bit_reader bit_reader;
