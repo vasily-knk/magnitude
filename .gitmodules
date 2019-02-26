@@ -1,3 +1,6 @@
 [submodule "simlabs-core"]
 	path = simlabs-core
 	url = https://github.com/SimLabs/core.git
+[submodule "src/hl_demo_processor/HLDemoParser"]
+	path = src/hl_demo_processor/HLDemoParser
+	url = ../HLDemoParser
