@@ -1,3 +1,4 @@
+/bin
 .qmake.stash
 *.sln
 *.opensdf
@@ -8,8 +9,14 @@
 stdafx.h.cpp
 *.pdb
 *.sdf
-make_vc*.cmd
+*.tlog
+*.log
+make_vc.cmd
 *.pyc
 *.autosave
 .idea
 .vs
+temp/*
+moc_predefs.*
+
+node_modules
