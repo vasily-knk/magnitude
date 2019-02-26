@@ -1,5 +1,5 @@
 TEMPLATE = app
-DEV_ROOT = $$(SIMLABS_REPO_DIR)
+DEV_ROOT = ../..
 
 include($$DEV_ROOT/src/predefines.pri)
 

@@ -1,1 +1,1 @@
-include(../core/src/postdefines.pri)
+include(../simlabs-core/src/postdefines.pri)
